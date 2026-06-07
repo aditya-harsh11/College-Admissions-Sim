@@ -4,6 +4,12 @@ import type { GroupSlice } from '../sim/types';
 interface Props {
   data: GroupSlice[];
   classSize: number;
+  /**
+   * When false (e.g. while a slider is actively being dragged) the pie redraws instantly
+   * on every change so it tracks the drag live. When true it plays its morph tween — nice
+   * for preset clicks and the settle on release.
+   */
+  animate: boolean;
 }
 
 /**
@@ -11,7 +17,7 @@ interface Props {
  * fall to 0% shrink to nothing rather than disappearing) so Recharts morphs smoothly
  * between weightings instead of jumping.
  */
-export function Donut({ data, classSize }: Props) {
+export function Donut({ data, classSize, animate }: Props) {
   return (
     <div className="donut">
       <ResponsiveContainer width="100%" height="100%">
@@ -26,8 +32,8 @@ export function Donut({ data, classSize }: Props) {
             endAngle={-270}
             paddingAngle={1}
             stroke="none"
-            isAnimationActive
-            animationDuration={450}
+            isAnimationActive={animate}
+            animationDuration={420}
             animationEasing="ease-out"
           >
             {data.map((s) => (

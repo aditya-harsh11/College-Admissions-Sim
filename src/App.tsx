@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AllocationPanel } from './components/AllocationPanel';
 import { CompareBars } from './components/CompareBars';
 import { Donut } from './components/Donut';
@@ -67,6 +67,20 @@ function weightsEqual(a: Weights, b: Weights): boolean {
 
 export default function App() {
   const [weights, setWeights] = useState<Weights>(defaultWeights);
+  // While a slider is actively dragged we drop the donut's morph tween so it tracks the
+  // drag live; the tween returns on release (and for preset clicks).
+  const [dragging, setDragging] = useState(false);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const end = () => setDragging(false);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+    return () => {
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+    };
+  }, [dragging]);
 
   // Generated once — a stable pool means every shift is attributable to the rubric.
   const pool = useMemo(() => generateApplicantPool(config), []);
@@ -99,7 +113,12 @@ export default function App() {
       </header>
 
       <main className="lab">
-        <AllocationPanel criteria={config.criteria} weights={weights} onChange={handleChange} />
+        <AllocationPanel
+          criteria={config.criteria}
+          weights={weights}
+          onChange={handleChange}
+          onDragStart={() => setDragging(true)}
+        />
 
         <section className="panel results">
           <header className="panel__head">
@@ -113,7 +132,7 @@ export default function App() {
           </header>
 
           <div className="results__hero">
-            <Donut data={result.breakdown} classSize={animatedClassSize} />
+            <Donut data={result.breakdown} classSize={animatedClassSize} animate={!dragging} />
             <Legend admitted={result.breakdown} pool={result.poolBreakdown} />
           </div>
 

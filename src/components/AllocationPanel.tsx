@@ -5,6 +5,8 @@ interface Props {
   criteria: Criterion[];
   weights: Weights;
   onChange: (key: Criterion['key'], value: number) => void;
+  /** Fired when a slider drag begins, so the parent can switch the donut to live mode. */
+  onDragStart: () => void;
 }
 
 /**
@@ -12,7 +14,7 @@ interface Props {
  * Controls are intentionally monochrome (ink on paper) — all the color in the piece
  * is reserved for the demographic outcome on the right.
  */
-export function AllocationPanel({ criteria, weights, onChange }: Props) {
+export function AllocationPanel({ criteria, weights, onChange, onDragStart }: Props) {
   const total = criteria.reduce((sum, c) => sum + weights[c.key], 0);
   const valid = total === 100;
 
@@ -48,6 +50,7 @@ export function AllocationPanel({ criteria, weights, onChange }: Props) {
                 step={1}
                 value={v}
                 onChange={(e) => onChange(c.key, Number(e.target.value))}
+                onPointerDown={onDragStart}
                 style={{ '--fill': `${v}%` } as CSSProperties}
                 aria-label={c.label}
               />
