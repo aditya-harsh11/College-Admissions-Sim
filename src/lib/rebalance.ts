@@ -1,6 +1,7 @@
 import type { AttributeKey, Weights } from '../sim/types';
 
 const KEYS: AttributeKey[] = [
+  'grades',
   'testScore',
   'communityService',
   'extracurriculars',
@@ -31,7 +32,7 @@ export function rebalance(weights: Weights, changed: AttributeKey, rawValue: num
   if (otherSum === 0) {
     const base = Math.floor(remaining / others.length);
     others.forEach((k) => (next[k] = base));
-    let leftover = remaining - base * others.length;
+    const leftover = remaining - base * others.length;
     for (let i = 0; i < leftover; i++) next[others[i]] += 1;
     return next;
   }
@@ -43,7 +44,7 @@ export function rebalance(weights: Weights, changed: AttributeKey, rawValue: num
     next[s.k] = Math.floor(s.exact);
     assigned += next[s.k];
   }
-  let leftover = remaining - assigned;
+  const leftover = remaining - assigned;
   scaled.sort((a, b) => (b.exact % 1) - (a.exact % 1));
   for (let i = 0; i < leftover; i++) next[scaled[i].k] += 1;
 

@@ -10,6 +10,8 @@ interface Props {
    * for preset clicks and the settle on release.
    */
   animate: boolean;
+  /** Soft "not a valid rubric yet" signal — fades the chart when the manual total ≠ 100. */
+  dimmed?: boolean;
 }
 
 /**
@@ -17,9 +19,9 @@ interface Props {
  * fall to 0% shrink to nothing rather than disappearing) so Recharts morphs smoothly
  * between weightings instead of jumping.
  */
-export function Donut({ data, classSize, animate }: Props) {
+export function Donut({ data, classSize, animate, dimmed }: Props) {
   return (
-    <div className="donut">
+    <div className={`donut ${dimmed ? 'donut--dim' : ''}`}>
       <ResponsiveContainer width="100%" height="100%">
         <PieChart>
           <Pie

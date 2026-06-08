@@ -2,6 +2,7 @@ import type { Applicant, AttributeKey, SimConfig } from './types';
 import { clamp01, gaussian, mulberry32 } from './rng';
 
 const ATTRIBUTE_KEYS: AttributeKey[] = [
+  'grades',
   'testScore',
   'communityService',
   'extracurriculars',

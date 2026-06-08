@@ -2,6 +2,7 @@
 // Everything that controls behavior lives in config.ts.
 
 export type AttributeKey =
+  | 'grades'
   | 'testScore'
   | 'communityService'
   | 'extracurriculars'
@@ -45,6 +46,14 @@ export interface SimConfig {
    * experience directly lifts the admitted first-gen share.
    */
   firstGen: { baseRate: number; lifeExperienceBoost: number };
+  /**
+   * UI feature flags. Toggle pieces on/off without touching components — e.g. hide the
+   * preset rubrics for the survey version (they can anchor participants) but keep them
+   * for the teaching sandbox.
+   */
+  ui: {
+    showPresets: boolean;
+  };
 }
 
 export interface Applicant {
