@@ -58,12 +58,22 @@ export async function saveResponse(meta: Record<string, unknown> = {}): Promise<
     events: getEvents(),
   };
 
-  // TODO(storage): POST `payload` to the Google Sheet endpoint (Plan A). For now we keep it
-  // local so nothing leaves the browser during piloting.
+  // Store in the local responses database (server/server.mjs → data/responses.db). If the server
+  // isn't running (e.g. the static hub build), fall back to localStorage so nothing is lost.
   try {
-    localStorage.setItem(`response:${sessionId}`, JSON.stringify(payload));
-  } catch {
-    // localStorage can throw in private mode / sandboxed iframes — logging is best-effort.
+    const r = await fetch('/api/response', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(`bad status ${r.status}`);
+    console.info('[saveResponse] stored in database', payload.sessionId);
+  } catch (e) {
+    try {
+      localStorage.setItem(`response:${sessionId}`, JSON.stringify(payload));
+    } catch {
+      // localStorage can throw in private mode / sandboxed iframes — logging is best-effort.
+    }
+    console.warn('[saveResponse] database unavailable — saved to localStorage instead', e);
   }
-  console.info('[saveResponse]', payload);
 }
