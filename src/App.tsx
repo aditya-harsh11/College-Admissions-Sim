@@ -243,6 +243,7 @@ export default function App() {
           locked={finalized}
           finalized={finalized}
           canFinalize={canFinalize}
+          showFinalize={false}
           onFinalize={handleFinalize}
           onChange={handleChange}
           onDragStart={handleDragStart}
@@ -284,6 +285,28 @@ export default function App() {
           )}
         </section>
       </main>
+
+      <section className="panel step3">
+        <header className="panel__head">
+          <div>
+            <p className="panel__kicker">Step 03</p>
+            <h2 className="panel__title">Finalize your rubric</h2>
+          </div>
+          <div className={`budget ${canFinalize ? '' : 'budget--invalid'}`}>
+            <span className="budget__num">{total}</span>
+            <span className="budget__den">/ 100 pts</span>
+          </div>
+        </header>
+        <div className="step3__action">
+          {finalized ? (
+            <span className="rubric__status">✓ Rubric finalized</span>
+          ) : (
+            <button className="btn btn--primary" disabled={!canFinalize} onClick={handleFinalize}>
+              {canFinalize ? 'Finalize rubric' : 'Balance to 100 to finalize'}
+            </button>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

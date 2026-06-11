@@ -11,6 +11,8 @@ interface Props {
   finalized: boolean;
   /** Only allow committing when the budget is exactly spent (total === 100). */
   canFinalize: boolean;
+  /** Render the in-panel Finalize footer. False when finalize lives in its own Step 03 section. */
+  showFinalize?: boolean;
   onFinalize: () => void;
   onChange: (key: Criterion['key'], value: number) => void;
   /** Fired when a slider drag begins, so the parent can switch the donut to live mode + log it. */
@@ -29,6 +31,7 @@ export function AllocationPanel({
   locked,
   finalized,
   canFinalize,
+  showFinalize = true,
   onFinalize,
   onChange,
   onDragStart,
@@ -95,15 +98,17 @@ export function AllocationPanel({
         })}
       </div>
 
-      <div className="rubric__footer">
-        {finalized ? (
-          <span className="rubric__status">✓ Rubric finalized</span>
-        ) : (
-          <button className="btn btn--primary" disabled={!canFinalize} onClick={onFinalize}>
-            {canFinalize ? 'Finalize rubric' : 'Balance to 100 to finalize'}
-          </button>
-        )}
-      </div>
+      {showFinalize && (
+        <div className="rubric__footer">
+          {finalized ? (
+            <span className="rubric__status">✓ Rubric finalized</span>
+          ) : (
+            <button className="btn btn--primary" disabled={!canFinalize} onClick={onFinalize}>
+              {canFinalize ? 'Finalize rubric' : 'Balance to 100 to finalize'}
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }

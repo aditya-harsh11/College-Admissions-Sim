@@ -819,3 +819,16 @@ input[type='range']::-moz-range-thumb {
   }
 }
 
+/* ───────────────────────────  Step 03 — Finalize (its own step)  ─────────────────────────── */
+.step3 {
+  flex: 0 0 auto;
+}
+.step3__action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.step3__action .btn--primary {
+  flex: 1;
+}
+
