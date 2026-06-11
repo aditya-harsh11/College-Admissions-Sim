@@ -140,7 +140,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
             </h1>
             <p className="study__lead">
               You’re about to play the role of a college admissions officer. You’ll get a fixed
-              budget of <strong>100 points</strong> to spread across what matters in an applicant —
+              budget of <strong>100 points</strong> to spread across what matters in an applicant,
               and you’ll see the class your choices would admit.
             </p>
             <p className="study__note">Takes about 5 minutes. There are no right answers.</p>
@@ -158,7 +158,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
               <p>
                 This is a research study about how people make admissions decisions. You’ll set an
                 admissions rubric, see a simulated result, and have a chance to revise it. The
-                applicant data is <strong>simulated</strong> — no real students are involved.
+                applicant data is <strong>simulated</strong>. No real students are involved.
               </p>
               <p>
                 Your interactions (the choices you make and how long you take) are recorded for
@@ -228,9 +228,6 @@ export function StudyFlow({ config }: { config: SimConfig }) {
               </select>
             </label>
 
-            <p className="study__note">
-              (Placeholder fields — these will be tailored per study version.)
-            </p>
             <button className="btn btn--primary" onClick={() => go('pre')}>
               Continue
             </button>
@@ -240,8 +237,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
         {step === 'pre' && (
           <section className="study__card study__card--rubric">
             <p className="study__stagehint">
-              Spend your 100 points. You won’t see the result yet — set the rubric you think is
-              fair.
+              Spend your 100 points. You won’t see the result yet. Set the rubric you think is fair.
             </p>
             <AllocationPanel
               criteria={config.criteria}
@@ -263,13 +259,13 @@ export function StudyFlow({ config }: { config: SimConfig }) {
             <p className="panel__kicker">The class your rubric admits</p>
             <h2 className="study__h2">Here’s who got in.</h2>
             <p className="study__lead">
-              With the rubric you just set, this is the demographic makeup of the admitted class —
-              the top {Math.round(config.classFraction * 100)}% of{' '}
+              With the rubric you just set, this is the demographic makeup of the admitted class: the
+              top {Math.round(config.classFraction * 100)}% of{' '}
               {pool.length.toLocaleString()} applicants.
             </p>
             <Outcome result={preResult} />
             <p className="study__note">
-              A rubric that feels neutral can still reshape who gets in. Take a look — then decide
+              A rubric that feels neutral can still reshape who gets in. Take a look, then decide
               whether you’d like to change anything.
             </p>
             <button className="btn btn--primary" onClick={startPost}>
@@ -285,8 +281,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
             }`}
           >
             <p className="study__stagehint">
-              Now that you’ve seen the result, adjust your rubric however you like — or leave it as
-              is.
+              Now that you’ve seen the result, adjust your rubric however you like, or leave it as is.
             </p>
             <div className={config.ui.showPostPie ? 'study__splitgrid' : ''}>
               <AllocationPanel
@@ -351,7 +346,7 @@ function BeforeAfter({
           <th>Criterion</th>
           <th>Before</th>
           <th>After</th>
-          <th>Δ</th>
+          <th>Change</th>
         </tr>
       </thead>
       <tbody>
@@ -363,7 +358,7 @@ function BeforeAfter({
               <td>{pre[c.key]}</td>
               <td>{post[c.key]}</td>
               <td className={delta > 0 ? 'delta--up' : delta < 0 ? 'delta--down' : 'delta--flat'}>
-                {delta > 0 ? `+${delta}` : delta < 0 ? delta : '—'}
+                {delta > 0 ? `+${delta}` : delta < 0 ? delta : '0'}
               </td>
             </tr>
           );

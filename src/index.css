@@ -1012,16 +1012,28 @@ input[type='range']::-moz-range-thumb {
   width: 100%;
   font-family: var(--sans);
   font-size: 1rem;
-  padding: 10px 12px;
+  font-weight: 500;
+  padding: 12px 40px 12px 14px;
   border: 1.5px solid var(--line);
   border-radius: 10px;
-  background: #fff;
   color: var(--ink);
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #fff;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%237c7264' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.study__select:hover {
+  border-color: var(--muted);
 }
 .study__select:focus {
   outline: none;
   border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(27, 24, 21, 0.08);
 }
 
 .study__card--rubric,
@@ -1096,6 +1108,12 @@ input[type='range']::-moz-range-thumb {
 .study__ba td:nth-child(3),
 .study__ba td:nth-child(4) {
   font-family: var(--mono);
+  text-align: right;
+}
+/* Right-align the numeric headers too, so they line up over their values. */
+.study__ba th:nth-child(2),
+.study__ba th:nth-child(3),
+.study__ba th:nth-child(4) {
   text-align: right;
 }
 .study__ba .delta--up {
