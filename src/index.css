@@ -1108,3 +1108,134 @@ input[type='range']::-moz-range-thumb {
   color: var(--muted);
 }
 
+/* ───────────────────────────  Self-ranking (v5)  ─────────────────────────── */
+.selfrank__head {
+  flex: 0 0 auto;
+  border-bottom: 1.5px solid var(--ink);
+  padding-bottom: clamp(12px, 2vh, 20px);
+}
+.selfrank__sub {
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--muted);
+  margin-top: 8px;
+  font-size: 1rem;
+}
+
+.selfrank__inputs {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.6vh, 18px);
+}
+
+.selfrank__schools {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.schoolcard {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    'main meta'
+    'bar bar'
+    'note note';
+  gap: 6px 12px;
+  align-items: center;
+}
+.schoolcard__main {
+  grid-area: main;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.schoolcard__name {
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+.schoolcard__meta {
+  grid-area: meta;
+  text-align: right;
+  display: flex;
+  flex-direction: column;
+}
+.schoolcard__prob {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+}
+.schoolcard__cap {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.schoolcard__bar {
+  grid-area: bar;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--track);
+  overflow: hidden;
+}
+.schoolcard__fill {
+  height: 100%;
+  background: var(--graphite);
+  transition: width 0.4s ease;
+}
+.schoolcard__note {
+  grid-area: note;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.bucket {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.bucket--safety {
+  background: #e3efe0;
+  color: #2f5e2f;
+}
+.bucket--target {
+  background: #f6eccf;
+  color: #8a6516;
+}
+.bucket--reach {
+  background: #f6ddd3;
+  color: #9e3b22;
+}
+.bucket--hard {
+  background: #efcfca;
+  color: #7c241a;
+}
+
+.selfrank__feedback {
+  margin-top: 16px;
+  border-top: 1px solid var(--line-soft);
+  padding-top: 14px;
+}
+.selfrank__feedback p {
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.selfrank__disclaimer {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--muted) !important;
+}
+

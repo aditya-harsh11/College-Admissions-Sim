@@ -36,8 +36,8 @@ export const DEFAULT_CONFIG: SimConfig = {
     startBlank: true,
     defaultMode: 'manual',
     crowdOutAt100: true,
-    // v4: run the multi-step study flow (welcome → consent → info → pre → learn → post).
-    flow: 'study',
+    // Active flow: 'single' (sandbox) | 'study' (v4 multi-step) | 'selfrank' (v5 "where do you rank?").
+    flow: 'selfrank',
     // v4: reveal-then-revise — pie visible during the POST rubric. Flip false for a blind sibling.
     showPostPie: true,
   },
