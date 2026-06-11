@@ -88,8 +88,8 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   };
 
   const startPost = () => {
-    // Reveal-then-revise: seed the post rubric from their pre answer so they edit, not restart.
-    if (preCaptured) post.setAll(preCaptured);
+    // Post is a fresh second measure: the participant rebuilds from 0 after seeing the result
+    // (not pre-filled with their first answer).
     go('post');
   };
 
