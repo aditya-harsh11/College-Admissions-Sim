@@ -28,8 +28,14 @@ export const DEFAULT_CONFIG: SimConfig = {
 
   ui: {
     // Preset rubrics: handy for demos, but flip to false for the survey version so they
-    // don't anchor how participants allocate.
+    // don't anchor how participants allocate. (Randy: keep for now — options to show Trish.)
     showPresets: true,
+    // Study version (v3+): hide the applicant-pool comparison bars, start sliders blank at 0,
+    // open in manual, and (Ben's refinement) crowd out once the 100-pt budget is full.
+    showPoolBar: false,
+    startBlank: true,
+    defaultMode: 'manual',
+    crowdOutAt100: true,
   },
 
   criteria: [

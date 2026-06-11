@@ -6,6 +6,7 @@ import { Legend } from './components/Legend';
 import { StatStrip } from './components/StatStrip';
 import { useAnimatedNumber } from './hooks/useAnimatedNumber';
 import { rebalance } from './lib/rebalance';
+import { logEvent, saveResponse } from './lib/logger';
 import { DEFAULT_CONFIG } from './sim/config';
 import { generateApplicantPool } from './sim/generator';
 import { runSim } from './sim/scoring';
@@ -15,7 +16,8 @@ const config = DEFAULT_CONFIG;
 
 const defaultWeights = (): Weights =>
   config.criteria.reduce((acc, c) => {
-    acc[c.key] = c.defaultWeight;
+    // Study version starts blank (all 0) so participants build the rubric from scratch.
+    acc[c.key] = config.ui.startBlank ? 0 : c.defaultWeight;
     return acc;
   }, {} as Weights);
 
@@ -77,10 +79,13 @@ type SliderMode = 'auto' | 'manual';
 
 const clampPts = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
 
+const sum = (w: Weights) =>
+  (Object.keys(w) as AttributeKey[]).reduce((s, k) => s + w[k], 0);
+
 /** Bring an off-100 allocation back to exactly 100, reusing the auto-balance math. */
 function normalizeTo100(w: Weights): Weights {
   const keys = Object.keys(w) as AttributeKey[];
-  const total = keys.reduce((sum, k) => sum + w[k], 0);
+  const total = keys.reduce((s, k) => s + w[k], 0);
   if (total === 100) return w;
   // Pin the largest weight and let rebalance scale the rest to fill the remainder.
   const maxKey = keys.reduce((a, b) => (w[a] >= w[b] ? a : b));
@@ -89,17 +94,30 @@ function normalizeTo100(w: Weights): Weights {
 
 export default function App() {
   const [weights, setWeights] = useState<Weights>(defaultWeights);
-  const [mode, setMode] = useState<SliderMode>('auto');
-  // Once finalized, the rubric locks (greys out) until the user hits Edit. No navigation —
-  // it's an in-place "commit" step, and the natural moment to log the final response (#8).
+  const [mode, setMode] = useState<SliderMode>(config.ui.defaultMode);
+  // Once finalized, the rubric locks (greys out). No navigation — it's an in-place "commit"
+  // step, and the natural moment to log the final response (#8).
   const [finalized, setFinalized] = useState(false);
   // While a slider is actively dragged we drop the donut's morph tween so it tracks the
   // drag live; the tween returns on release (and for preset clicks).
   const [dragging, setDragging] = useState(false);
 
+  // Log the session once, with the active study config so each response is self-describing.
+  useEffect(() => {
+    logEvent('session_start', {
+      startBlank: config.ui.startBlank,
+      defaultMode: config.ui.defaultMode,
+      showPoolBar: config.ui.showPoolBar,
+      crowdOutAt100: config.ui.crowdOutAt100,
+    });
+  }, []);
+
   useEffect(() => {
     if (!dragging) return;
-    const end = () => setDragging(false);
+    const end = () => {
+      setDragging(false);
+      logEvent('drag_end');
+    };
     window.addEventListener('pointerup', end);
     window.addEventListener('pointercancel', end);
     return () => {
@@ -112,28 +130,64 @@ export default function App() {
   const pool = useMemo(() => generateApplicantPool(config), []);
   const result = useMemo(() => runSim(pool, weights, config), [pool, weights]);
 
-  const handleChange = (key: AttributeKey, value: number) =>
-    setWeights((w) =>
-      mode === 'auto' ? rebalance(w, key, value) : { ...w, [key]: clampPts(value) },
-    );
+  const handleChange = (key: AttributeKey, value: number) => {
+    let next: Weights;
+    if (mode === 'auto') {
+      next = rebalance(weights, key, value);
+    } else {
+      const v = clampPts(value);
+      const tentativeTotal = sum(weights) - weights[key] + v;
+      // Ben's refinement: once the budget is full, extra points crowd the others out
+      // (so the total holds at 100 instead of overflowing).
+      if (config.ui.crowdOutAt100 && tentativeTotal > 100) {
+        next = rebalance(weights, key, v);
+      } else {
+        next = { ...weights, [key]: v };
+      }
+    }
+    logEvent('weight_change', { key, from: weights[key], to: next[key], mode, total: sum(next) });
+    setWeights(next);
+  };
 
   const handleModeChange = (next: SliderMode) => {
+    logEvent('mode_change', { from: mode, to: next });
     // Snap back to a valid 100 when returning to auto, so the budget never reads invalid.
     if (next === 'auto') setWeights((w) => normalizeTo100(w));
     setMode(next);
+  };
+
+  const handlePreset = (p: Preset) => {
+    logEvent('preset_click', { preset: p.id });
+    setWeights({ ...p.weights });
+  };
+
+  const handleDragStart = (key: AttributeKey) => {
+    setDragging(true);
+    logEvent('drag_start', { key });
   };
 
   const animatedClassSize = Math.round(useAnimatedNumber(result.classSize));
 
   // In manual mode the total can drift off 100; while it has, the rubric isn't "valid" yet,
   // so we dim the outcome as a soft signal (auto mode always sums to 100, so it's never dimmed).
-  const total = (Object.keys(weights) as AttributeKey[]).reduce((sum, k) => sum + weights[k], 0);
+  const total = sum(weights);
   const invalid = mode === 'manual' && total !== 100;
   // You can only commit a rubric that spends exactly the 100-point budget.
   const canFinalize = total === 100;
 
   const handleFinalize = () => {
-    // TODO(#8): saveResponse({ weights, mode, result, … }) — this is the commit moment.
+    logEvent('finalize', { weights, mode, total });
+    // The commit moment: persist the final rubric + the full interaction log (#8).
+    void saveResponse({
+      weights,
+      mode,
+      total,
+      outcome: {
+        breakdown: result.breakdown,
+        firstGenPct: result.firstGenPct,
+        avgTestScore: result.avgTestScore,
+      },
+    });
     setFinalized(true);
   };
 
@@ -170,7 +224,7 @@ export default function App() {
                 <button
                   key={p.id}
                   className={`preset ${weightsEqual(weights, p.weights) ? 'preset--on' : ''}`}
-                  onClick={() => setWeights({ ...p.weights })}
+                  onClick={() => handlePreset(p)}
                   disabled={finalized}
                 >
                   {p.label}
@@ -191,7 +245,7 @@ export default function App() {
           canFinalize={canFinalize}
           onFinalize={handleFinalize}
           onChange={handleChange}
-          onDragStart={() => setDragging(true)}
+          onDragStart={handleDragStart}
         />
 
         <section className="panel results">
@@ -222,10 +276,12 @@ export default function App() {
             poolTestIndex={result.poolAvgTestScore * 100}
           />
 
-          <div className="results__compare">
-            <h3 className="results__subhead">Who applied vs. who got in</h3>
-            <CompareBars pool={result.poolBreakdown} admitted={result.breakdown} />
-          </div>
+          {config.ui.showPoolBar && (
+            <div className="results__compare">
+              <h3 className="results__subhead">Who applied vs. who got in</h3>
+              <CompareBars pool={result.poolBreakdown} admitted={result.breakdown} />
+            </div>
+          )}
         </section>
       </main>
     </div>

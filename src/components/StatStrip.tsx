@@ -48,7 +48,7 @@ export function StatStrip({ firstGenPct, poolFirstGenPct, avgTestIndex, poolTest
         suffix="%"
         baseline={poolFirstGenPct}
       />
-      <Stat caption="Avg academic index" value={avgTestIndex} baseline={poolTestIndex} />
+      <Stat caption="Avg test score" value={avgTestIndex} baseline={poolTestIndex} />
     </div>
   );
 }

@@ -13,8 +13,8 @@ interface Props {
   canFinalize: boolean;
   onFinalize: () => void;
   onChange: (key: Criterion['key'], value: number) => void;
-  /** Fired when a slider drag begins, so the parent can switch the donut to live mode. */
-  onDragStart: () => void;
+  /** Fired when a slider drag begins, so the parent can switch the donut to live mode + log it. */
+  onDragStart: (key: Criterion['key']) => void;
 }
 
 /**
@@ -85,7 +85,7 @@ export function AllocationPanel({
                 value={v}
                 disabled={locked}
                 onChange={(e) => onChange(c.key, Number(e.target.value))}
-                onPointerDown={onDragStart}
+                onPointerDown={() => onDragStart(c.key)}
                 style={{ '--fill': `${v}%` } as CSSProperties}
                 aria-label={c.label}
               />

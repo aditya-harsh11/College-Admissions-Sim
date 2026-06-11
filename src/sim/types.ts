@@ -53,6 +53,14 @@ export interface SimConfig {
    */
   ui: {
     showPresets: boolean;
+    /** Hide the "who applied vs. who got in" applicant-pool bars (study version). */
+    showPoolBar: boolean;
+    /** Start every criterion at 0 so participants build the rubric from scratch (no anchoring). */
+    startBlank: boolean;
+    /** Which slider behavior the app opens in. */
+    defaultMode: 'auto' | 'manual';
+    /** Manual-mode refinement: once the total reaches 100, extra points crowd the others out. */
+    crowdOutAt100: boolean;
   };
 }
 
