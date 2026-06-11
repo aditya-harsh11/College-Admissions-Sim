@@ -61,7 +61,29 @@ export interface SimConfig {
     defaultMode: 'auto' | 'manual';
     /** Manual-mode refinement: once the total reaches 100, extra points crowd the others out. */
     crowdOutAt100: boolean;
+    /** Single-page sandbox (`single`) vs. the multi-step study flow (`study`). */
+    flow: 'single' | 'study';
+    /** Study only: show the demographic pie during the POST rubric (reveal-then-revise) vs. blind. */
+    showPostPie: boolean;
   };
+  /** Real-ish schools for the "dream school" step + the v5 selectivity mechanic. */
+  schools: SchoolProfile[];
+}
+
+/**
+ * A real-world school used for the "dream school" step and the selectivity mechanic. Numbers are
+ * approximate (see Notes/Research.md) and tuned for relative contrast, not precision. `admitRate`
+ * drives how forgiving admission is; `testBlind` schools ignore the Test Scores weight entirely.
+ */
+export interface SchoolProfile {
+  id: string;
+  label: string;
+  applicants: number;
+  /** Fraction admitted (0..1). Lower = more selective. */
+  admitRate: number;
+  /** True = SAT/ACT not used at all (e.g. UCLA). */
+  testBlind?: boolean;
+  note?: string;
 }
 
 export interface Applicant {

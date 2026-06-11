@@ -11,6 +11,8 @@ interface Props {
   finalized: boolean;
   /** Only allow committing when the budget is exactly spent (total === 100). */
   canFinalize: boolean;
+  /** Primary-button label when ready to commit (study flow uses "Continue"). */
+  ctaLabel?: string;
   onFinalize: () => void;
   onChange: (key: Criterion['key'], value: number) => void;
   /** Fired when a slider drag begins, so the parent can switch the donut to live mode + log it. */
@@ -29,6 +31,7 @@ export function AllocationPanel({
   locked,
   finalized,
   canFinalize,
+  ctaLabel = 'Finalize rubric',
   onFinalize,
   onChange,
   onDragStart,
@@ -100,7 +103,7 @@ export function AllocationPanel({
           <span className="rubric__status">✓ Rubric finalized</span>
         ) : (
           <button className="btn btn--primary" disabled={!canFinalize} onClick={onFinalize}>
-            {canFinalize ? 'Finalize rubric' : 'Balance to 100 to finalize'}
+            {canFinalize ? ctaLabel : 'Balance to 100 to finalize'}
           </button>
         )}
       </div>

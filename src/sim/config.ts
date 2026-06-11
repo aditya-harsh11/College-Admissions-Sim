@@ -36,7 +36,46 @@ export const DEFAULT_CONFIG: SimConfig = {
     startBlank: true,
     defaultMode: 'manual',
     crowdOutAt100: true,
+    // v4: run the multi-step study flow (welcome → consent → info → pre → learn → post).
+    flow: 'study',
+    // v4: reveal-then-revise — pie visible during the POST rubric. Flip false for a blind sibling.
+    showPostPie: true,
   },
+
+  // Approximate, web-sourced school data (see Notes/Research.md). Tuned for relative CONTRAST
+  // (selectivity ordering), not precision — verify before any production use. Drives the v5
+  // "dream school" step + selectivity mechanic.
+  schools: [
+    {
+      id: 'harvard',
+      label: 'Harvard',
+      applicants: 57000,
+      admitRate: 0.034,
+      note: '~3–4% admit — the rubric weights matter enormously here.',
+    },
+    {
+      id: 'ucla',
+      label: 'UCLA',
+      applicants: 146000,
+      admitRate: 0.09,
+      testBlind: true,
+      note: 'Test-blind: the Test Scores weight is ignored. ~9% admit.',
+    },
+    {
+      id: 'uf',
+      label: 'University of Florida',
+      applicants: 70000,
+      admitRate: 0.24,
+      note: '~20–24% admit.',
+    },
+    {
+      id: 'uwmadison',
+      label: 'UW–Madison',
+      applicants: 65000,
+      admitRate: 0.45,
+      note: '~45% admit — closer to threshold admission; the weights barely move your fate.',
+    },
+  ],
 
   criteria: [
     {
