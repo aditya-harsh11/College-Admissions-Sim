@@ -49,6 +49,7 @@ function Outcome({ result, dimmed }: { result: SimResult; dimmed?: boolean }) {
  */
 export function StudyFlow({ config }: { config: SimConfig }) {
   const [step, setStep] = useState<Step>('welcome');
+  const [name, setName] = useState('');
   const [school, setSchool] = useState(config.schools[0]?.id ?? '');
   const [group, setGroup] = useState(config.groups[0]?.id ?? '');
   const [consented, setConsented] = useState(false);
@@ -98,7 +99,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
     const schoolLabel = config.schools.find((s) => s.id === school)?.label ?? school;
     const groupLabel = config.groups.find((g) => g.id === group)?.label ?? group;
     void saveResponse({
-      flow: 'study',
+      name,
       condition: conditionRef.current,
       school: { id: school, label: schoolLabel },
       group: { id: group, label: groupLabel },
@@ -193,6 +194,20 @@ export function StudyFlow({ config }: { config: SimConfig }) {
             <h2 className="study__h2">A couple of quick questions</h2>
 
             <label className="study__field">
+              <span className="study__fieldlabel">Your name</span>
+              <input
+                className="study__input"
+                type="text"
+                value={name}
+                placeholder="Type your name"
+                onChange={(e) => {
+                  setName(e.target.value);
+                  logEvent('field_change', { field: 'name', value: e.target.value });
+                }}
+              />
+            </label>
+
+            <label className="study__field">
               <span className="study__fieldlabel">Your dream school</span>
               <select
                 className="study__select"
@@ -228,7 +243,11 @@ export function StudyFlow({ config }: { config: SimConfig }) {
               </select>
             </label>
 
-            <button className="btn btn--primary" onClick={() => go('pre')}>
+            <button
+              className="btn btn--primary"
+              disabled={!name.trim()}
+              onClick={() => go('pre')}
+            >
               Continue
             </button>
           </section>
@@ -264,10 +283,6 @@ export function StudyFlow({ config }: { config: SimConfig }) {
               {pool.length.toLocaleString()} applicants.
             </p>
             <Outcome result={preResult} />
-            <p className="study__note">
-              A rubric that feels neutral can still reshape who gets in. Take a look, then decide
-              whether you’d like to change anything.
-            </p>
             <button className="btn btn--primary" onClick={startPost}>
               Revise my rubric
             </button>
@@ -281,7 +296,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
             }`}
           >
             <p className="study__stagehint">
-              Now that you’ve seen the result, adjust your rubric however you like, or leave it as is.
+              Now that you’ve seen the result, adjust your rubric however you like.
             </p>
             <div className={config.ui.showPostPie ? 'study__splitgrid' : ''}>
               <AllocationPanel

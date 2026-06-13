@@ -17,25 +17,23 @@ mkdirSync('data', { recursive: true });
 const db = new DatabaseSync(DB_PATH);
 db.exec(`
   CREATE TABLE IF NOT EXISTS responses (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    session_id   TEXT,
-    saved_at     TEXT,
-    flow         TEXT,
-    condition    TEXT,
-    school       TEXT,
-    "group"      TEXT,
-    duration_ms  INTEGER,
-    pre_weights  TEXT,
-    post_weights TEXT,
-    event_count  INTEGER,
-    payload      TEXT
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    p3_name         TEXT,
+    p3_school       TEXT,
+    p3_group        TEXT,
+    p4_pre_weights  TEXT,
+    p6_post_weights TEXT,
+    condition       TEXT,
+    duration_ms     INTEGER,
+    event_count     INTEGER,
+    payload         TEXT
   )
 `);
 
 const insert = db.prepare(`
   INSERT INTO responses
-    (session_id, saved_at, flow, condition, school, "group", duration_ms, pre_weights, post_weights, event_count, payload)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (p3_name, p3_school, p3_group, p4_pre_weights, p6_post_weights, condition, duration_ms, event_count, payload)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
 const send = (res, code, obj) => {
@@ -58,19 +56,17 @@ createServer((req, res) => {
       try {
         const p = JSON.parse(body);
         insert.run(
-          p.sessionId ?? null,
-          p.savedAt ?? new Date().toISOString(),
-          p.flow ?? null,
-          p.condition ?? null,
+          p.name ?? null,
           p.school?.label ?? null,
           p.group?.label ?? null,
-          p.durationMs ?? null,
           p.preWeights ? JSON.stringify(p.preWeights) : null,
           p.postWeights ? JSON.stringify(p.postWeights) : p.weights ? JSON.stringify(p.weights) : null,
+          p.condition ?? null,
+          p.durationMs ?? null,
           Array.isArray(p.events) ? p.events.length : null,
           body,
         );
-        console.log(`[server] stored response ${p.sessionId} (${p.flow})`);
+        console.log(`[server] stored response from ${p.name} (condition ${p.condition})`);
         send(res, 200, { ok: true });
       } catch (e) {
         send(res, 400, { ok: false, error: String(e) });
@@ -81,7 +77,7 @@ createServer((req, res) => {
 
   if (req.method === 'GET' && req.url === '/api/responses') {
     const rows = db
-      .prepare('SELECT id, session_id, saved_at, flow, condition, school, "group", duration_ms, event_count FROM responses ORDER BY id DESC')
+      .prepare('SELECT id, p3_name, p3_school, p3_group, condition, duration_ms, event_count FROM responses ORDER BY id DESC')
       .all();
     return send(res, 200, rows);
   }

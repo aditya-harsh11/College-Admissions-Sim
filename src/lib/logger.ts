@@ -51,8 +51,6 @@ export function getSessionId(): string {
  */
 export async function saveResponse(meta: Record<string, unknown> = {}): Promise<void> {
   const payload = {
-    sessionId,
-    savedAt: new Date().toISOString(),
     durationMs: Math.round(performance.now() - t0),
     ...meta,
     events: getEvents(),
@@ -67,7 +65,7 @@ export async function saveResponse(meta: Record<string, unknown> = {}): Promise<
       body: JSON.stringify(payload),
     });
     if (!r.ok) throw new Error(`bad status ${r.status}`);
-    console.info('[saveResponse] stored in database', payload.sessionId);
+    console.info('[saveResponse] stored in database', (payload as { name?: string }).name);
   } catch (e) {
     try {
       localStorage.setItem(`response:${sessionId}`, JSON.stringify(payload));
