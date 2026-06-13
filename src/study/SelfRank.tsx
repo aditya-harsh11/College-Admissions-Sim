@@ -12,13 +12,8 @@ const BUCKET_CLASS: Record<Bucket, string> = {
   'Hard reach': 'bucket--hard',
 };
 
-// Placeholder Barnum-effect feedback — deliberately vague, flattering, and universally applicable
-// (the same text for everyone is the point). Randy: real believable copy comes later.
-const BARNUM = `You come across as a capable, well-rounded applicant whose strengths don't always
-show up in a single number. Readers would likely see real potential here — someone who has had to
-balance competing priorities and who tends to be harder on themselves than the evidence warrants.
-With the right fit you'd thrive; a few schools on your list may be a reach, but that's true of
-almost every strong applicant.`;
+// Placeholder for the eventual Barnum-effect feedback (same vague-but-believable copy for everyone).
+const BARNUM = 'Placeholder feedback text. The real wording goes here later.';
 
 const SOFT: { key: keyof SelfProfile; label: string }[] = [
   { key: 'extracurriculars', label: 'Extracurriculars' },
@@ -28,9 +23,9 @@ const SOFT: { key: keyof SelfProfile; label: string }[] = [
 ];
 
 /**
- * Version 3 direction — "Where do YOU rank?" The participant enters their own profile and sees a
- * per-school admit probability + reach/target/safety bucket, modeled on 7sage/CollegeVine. Pairs
- * with the rubric app (the two halves Randy wants to fuse). Feedback is Barnum-style placeholder.
+ * "Where do you rank?" — modeled on the 7sage predictor: enter your profile, get a ranked TABLE of
+ * schools with your admit chance + a reach/target/safety verdict. Pairs with the rubric app (the two
+ * halves Randy wants to fuse). Chances are computed against the simulated pool — not real.
  */
 export function SelfRank({ config }: { config: SimConfig }) {
   const [profile, setProfile] = useState<SelfProfile>({
@@ -40,10 +35,13 @@ export function SelfRank({ config }: { config: SimConfig }) {
     leadership: 0.6,
     communityService: 0.6,
     lifeExperience: 0.5,
+    urm: false,
   });
 
   const pool = useMemo(() => generateApplicantPool(config), [config]);
   const chances = useMemo(() => computeChances(config, pool, profile), [config, pool, profile]);
+  // Sort like a real predictor: best odds first.
+  const ranked = useMemo(() => [...chances].sort((a, b) => b.probability - a.probability), [chances]);
 
   useEffect(() => {
     logEvent('session_start', { flow: 'selfrank' });
@@ -61,7 +59,7 @@ export function SelfRank({ config }: { config: SimConfig }) {
         <h1 className="masthead__title">
           Where do <em>you</em> rank?
         </h1>
-        <p className="selfrank__sub">Enter your profile to see where you'd stand at each school.</p>
+        <p className="selfrank__sub">Enter your profile to see your shot at each school.</p>
       </header>
 
       <main className="lab">
@@ -115,7 +113,7 @@ export function SelfRank({ config }: { config: SimConfig }) {
             </label>
 
             {SOFT.map((s) => {
-              const v = profile[s.key];
+              const v = profile[s.key] as number;
               return (
                 <label className="slider" key={s.key}>
                   <div className="slider__top">
@@ -137,10 +135,18 @@ export function SelfRank({ config }: { config: SimConfig }) {
                     }
                     aria-label={s.label}
                   />
-                  <span className="slider__blurb">Self-rated</span>
                 </label>
               );
             })}
+
+            <label className="selfrank__check">
+              <input
+                type="checkbox"
+                checked={!!profile.urm}
+                onChange={(e) => update({ urm: e.target.checked })}
+              />
+              <span>First-generation / underrepresented background</span>
+            </label>
           </div>
         </section>
 
@@ -148,41 +154,51 @@ export function SelfRank({ config }: { config: SimConfig }) {
           <header className="panel__head">
             <div>
               <p className="panel__kicker">Step 02</p>
-              <h2 className="panel__title">Your chances</h2>
+              <h2 className="panel__title">Where you'd stand</h2>
             </div>
           </header>
 
-          <ul className="selfrank__schools">
-            {chances.map((c) => (
-              <li className="schoolcard" key={c.school.id}>
-                <div className="schoolcard__main">
-                  <span className="schoolcard__name">{c.school.label}</span>
-                  <span className={`bucket ${BUCKET_CLASS[c.bucket]}`}>{c.bucket}</span>
-                </div>
-                <div className="schoolcard__meta">
-                  <span className="schoolcard__prob">{Math.round(c.probability * 100)}%</span>
-                  <span className="schoolcard__cap">admit chance</span>
-                </div>
-                <div className="schoolcard__bar">
-                  <div
-                    className="schoolcard__fill"
-                    style={{ width: `${Math.round(c.probability * 100)}%` }}
-                  />
-                </div>
-                <p className="schoolcard__note">
-                  {c.school.note} You'd land around the {Math.round(c.percentile)}th percentile of
-                  applicants.
-                </p>
-              </li>
-            ))}
-          </ul>
+          <table className="ranktable">
+            <thead>
+              <tr>
+                <th>School</th>
+                <th className="ranktable__num">Admit rate</th>
+                <th>Your chance</th>
+                <th className="ranktable__num">Verdict</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ranked.map((c) => {
+                const pct = Math.round(c.probability * 100);
+                return (
+                  <tr key={c.school.id}>
+                    <td className="ranktable__school">
+                      {c.school.label}
+                      {c.school.testBlind && <span className="ranktable__tag">test-blind</span>}
+                    </td>
+                    <td className="ranktable__num ranktable__rate">
+                      {Math.round(c.school.admitRate * 100)}%
+                    </td>
+                    <td>
+                      <div className="ranktable__chance">
+                        <span className="ranktable__bar">
+                          <span style={{ width: `${pct}%` }} />
+                        </span>
+                        <span className="ranktable__pct">{pct}%</span>
+                      </div>
+                    </td>
+                    <td className="ranktable__num">
+                      <span className={`bucket ${BUCKET_CLASS[c.bucket]}`}>{c.bucket}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
 
           <div className="selfrank__feedback">
             <p className="panel__kicker">Your read</p>
             <p>{BARNUM}</p>
-            <p className="selfrank__disclaimer">
-              Simulated feedback for a research demo — not real admissions advice.
-            </p>
           </div>
         </section>
       </main>

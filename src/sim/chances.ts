@@ -24,6 +24,8 @@ export interface SelfProfile {
   leadership: number;
   communityService: number;
   lifeExperience: number;
+  /** Underrepresented / first-gen background — applies a modest boost (à la 7sage's URM checkbox). */
+  urm?: boolean;
 }
 
 export type Bucket = 'Safety' | 'Target' | 'Reach' | 'Hard reach';
@@ -91,7 +93,7 @@ export function computeChances(
     // Test-blind schools ignore the Test Scores attribute entirely.
     const weights: Weights = school.testBlind ? { ...HOLISTIC, testScore: 0 } : HOLISTIC;
 
-    const youScore = scoreApplicant(you, weights);
+    const rawScore = scoreApplicant(you, weights);
     const poolScores = pool.map((a) => scoreApplicant(a, weights));
     const sorted = [...poolScores].sort((a, b) => b - a);
 
@@ -99,11 +101,14 @@ export function computeChances(
     const cutoffIdx = Math.min(n - 1, Math.max(0, Math.floor(n * school.admitRate) - 1));
     const cutoff = sorted[cutoffIdx];
 
-    const below = poolScores.reduce((c, s) => c + (s <= youScore ? 1 : 0), 0);
-    const percentile = (below / n) * 100;
-
     const mean = poolScores.reduce((s, x) => s + x, 0) / n;
     const scale = Math.max(1e-4, stddev(poolScores, mean) * 0.6);
+
+    // URM applies a modest upward shift (~0.8 SD) to the effective score.
+    const youScore = rawScore + (profile.urm ? scale * 0.8 : 0);
+
+    const below = poolScores.reduce((c, s) => c + (s <= youScore ? 1 : 0), 0);
+    const percentile = (below / n) * 100;
     const probability = clamp01(logistic((youScore - cutoff) / scale));
 
     return {
