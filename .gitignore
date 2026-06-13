@@ -8,9 +8,15 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
+.dist-staging
 dist-ssr
 *.local
+
+# Local SQLite responses DB (v4) — runtime data, never commit
+data/
+
+# dist/ is intentionally COMMITTED: the hub is built locally (where every version branch
+# exists) and Vercel just serves the finished files — no branch-fetching during deploy.
 
 # Editor directories and files
 .vscode/*
@@ -28,4 +34,3 @@ dist-ssr
 
 # Private working notes — never shipped or shared
 DEV_NOTES.md
-

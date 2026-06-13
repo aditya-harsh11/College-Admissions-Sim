@@ -1,23 +1,35 @@
 // Build the "hub": one static site containing every version in its own subfolder, plus the
-// landing menu (hub/index.html) at the root. Output → dist/  (index.html, v1/, v2/, … v5/).
+// landing menu (hub/index.html) at the root. Output → dist/  (index.html, v1/, … v5/).
 //
-// Each version lives on its own branch; this script checks each one out and builds it with a
-// RELATIVE base (./) so the bundle works under any path (/v1/, /v2/, …) and on any host.
+// Each version lives on its own branch. We build them LOCALLY (where every version branch
+// already exists) and COMMIT the finished dist/ — Vercel then just SERVES dist/ as static
+// files and never has to build or fetch branches itself. That removes the only fragile part
+// of the deploy (a fresh CI clone fetching + checking out other branches). See DEV_NOTES §2.
 //
-// Usage:  node scripts/build-hub.mjs   (also the Vercel build command — see vercel.json)
+//   Workflow:  npm run build:hub  →  git add dist && commit  →  push.
 //
-// On a fresh CI clone (e.g. Vercel) only the deployed branch exists, so we fetch each version
-// branch first. Locally the branches already exist and the fetch is skipped.
+// To avoid clobbering your working tree while it hops across branches, each version is built
+// into a throwaway, git-ignored staging dir (.dist-staging); the results are assembled into
+// the tracked dist/ only at the very end, back on the starting branch. (Building straight
+// into dist/ would make the final "checkout back to main" collide with main's committed dist.)
 
 import { execSync } from 'node:child_process';
 import { cpSync, mkdirSync, rmSync } from 'node:fs';
 
 const VERSIONS = ['v1', 'v2', 'v3', 'v4', 'v5'];
+const STAGING = '.dist-staging';
 const run = (cmd) => execSync(cmd, { stdio: 'inherit' });
 const out = (cmd) => execSync(cmd).toString().trim();
+const quiet = (cmd) => {
+  try {
+    execSync(cmd, { stdio: 'ignore' });
+  } catch {
+    /* best-effort cleanup — ignore */
+  }
+};
 
-// Remember where we started so we can return here no matter what. Prefer the branch name (keeps
-// HEAD attached locally); fall back to the commit SHA when already detached (e.g. on CI).
+// Remember where we started so we can return here. Prefer the branch name (keeps HEAD attached
+// locally); fall back to the commit SHA when already detached.
 let startRef;
 try {
   startRef = out('git symbolic-ref --short -q HEAD');
@@ -25,27 +37,30 @@ try {
   startRef = out('git rev-parse HEAD');
 }
 
-// Make sure every version branch is available locally (no-op if it already is).
-for (const v of VERSIONS) {
-  try {
-    out(`git rev-parse --verify ${v}`);
-  } catch {
-    run(`git fetch --depth=1 origin ${v}:${v}`);
-  }
-}
+// Put the tracked dist/ back to its committed state so the branch checkouts below can't fail
+// with "local changes would be overwritten". No-op on the first run (dist/ not committed yet).
+quiet('git checkout -q HEAD -- dist');
+quiet('git clean -fdq -- dist');
 
-rmSync('dist', { recursive: true, force: true });
-mkdirSync('dist', { recursive: true });
+// Fresh staging dir for the per-version builds (git-ignored, so checkouts leave it untouched).
+rmSync(STAGING, { recursive: true, force: true });
+mkdirSync(STAGING, { recursive: true });
 
 try {
   for (const v of VERSIONS) {
     run(`git checkout -q ${v}`);
-    run(`npm run build -- --base=./ --outDir=dist/${v}`);
+    // --base=./ → relative asset paths so each bundle works under /v1/, /v2/, … on any host.
+    run(`npm run build -- --base=./ --outDir=${STAGING}/${v}`);
   }
 } finally {
   run(`git checkout -q ${startRef}`);
 }
 
-// Landing menu at the root (hub/ only exists on the starting branch, which we're back on).
+// Assemble the tracked dist/ from the staged builds + the landing menu, then drop staging.
+rmSync('dist', { recursive: true, force: true });
+mkdirSync('dist', { recursive: true });
+for (const v of VERSIONS) cpSync(`${STAGING}/${v}`, `dist/${v}`, { recursive: true });
 cpSync('hub/index.html', 'dist/index.html');
-console.log('\nHub built → dist/  (index + ' + VERSIONS.join(', ') + ')');
+rmSync(STAGING, { recursive: true, force: true });
+
+console.log('\nHub built → dist/  — next: git add dist && commit && push (Vercel serves it as-is).');

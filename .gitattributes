@@ -1,0 +1,3 @@
+# Built hub assets are generated — store them verbatim (no CRLF/LF conversion) so a rebuild
+# that produces identical output shows up as a clean `git status`, not spurious changes.
+dist/** -text

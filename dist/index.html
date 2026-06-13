@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>College Admissions — versions</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+      :root { --bg:#ece3d2; --panel:#faf6ed; --ink:#1b1815; --muted:#7c7264; --line:#ddd2bd; }
+      * { box-sizing:border-box; margin:0; }
+      body { background:var(--bg); color:var(--ink); font-family:'Hanken Grotesk',system-ui,sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:clamp(24px,7vh,80px) clamp(20px,5vw,64px); }
+      .wrap { width:100%; max-width:680px; }
+      .grid { display:grid; gap:14px; }
+      a.card { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:18px; text-decoration:none; color:inherit; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px 24px; transition:transform .12s, border-color .12s, box-shadow .12s; }
+      a.card:hover { transform:translateY(-2px); border-color:var(--ink); box-shadow:0 18px 40px -28px rgba(40,30,15,.5); }
+      .tag { font-family:'JetBrains Mono',monospace; font-weight:700; font-size:1.1rem; background:var(--ink); color:var(--panel); border-radius:999px; width:48px; height:48px; display:flex; align-items:center; justify-content:center; }
+      .name { font-weight:700; font-size:1.15rem; }
+      .go { font-family:'JetBrains Mono',monospace; font-size:.75rem; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="grid">
+        <a class="card" href="v1/"><span class="tag">v1</span><span class="name">Original build</span><span class="go">open ↗</span></a>
+        <a class="card" href="v2/"><span class="tag">v2</span><span class="name">Pre-call build (9th Jun)</span><span class="go">open ↗</span></a>
+        <a class="card" href="v3/"><span class="tag">v3</span><span class="name">Post-call build (9th Jun)</span><span class="go">open ↗</span></a>
+        <a class="card" href="v4/"><span class="tag">v4</span><span class="name">Multi-page study</span><span class="go">open ↗</span></a>
+        <a class="card" href="v5/"><span class="tag">v5</span><span class="name">Profile ranking</span><span class="go">open ↗</span></a>
+      </div>
+    </div>
+  </body>
+</html>

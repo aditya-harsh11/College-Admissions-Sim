@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "node scripts/build-hub.mjs",
+  "buildCommand": "echo 'Serving prebuilt dist/ — built locally via: npm run build:hub'",
+  "installCommand": "echo 'No install needed — static prebuilt site.'",
   "outputDirectory": "dist"
 }
