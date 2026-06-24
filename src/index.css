@@ -1263,3 +1263,29 @@ input[type='range']::-moz-range-thumb {
   color: var(--muted) !important;
 }
 
+
+/* ───────────────────────────  SAT / ACT picker (self-rank)  ─────────────────────────── */
+.testpick {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--track);
+  border-radius: 999px;
+}
+.testpick__btn {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 3px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.testpick__btn.is-on {
+  background: var(--ink);
+  color: var(--panel);
+}

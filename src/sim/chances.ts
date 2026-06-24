@@ -17,8 +17,12 @@ import type { Applicant, SchoolProfile, SimConfig, Weights } from './types';
 export interface SelfProfile {
   /** 0..4 unweighted-ish GPA. */
   gpa: number;
+  /** Which standardized test the score refers to. */
+  testType: 'SAT' | 'ACT';
   /** 400..1600 SAT. */
   sat: number;
+  /** 1..36 ACT. */
+  act: number;
   /** Self-rated 0..1 for the "soft" criteria. */
   extracurriculars: number;
   leadership: number;
@@ -26,6 +30,8 @@ export interface SelfProfile {
   lifeExperience: number;
   /** Underrepresented / first-gen background — applies a modest boost (à la 7sage's URM checkbox). */
   urm?: boolean;
+  /** Legacy applicant (family attended) — applies a modest admissions boost. */
+  legacy?: boolean;
 }
 
 export type Bucket = 'Safety' | 'Target' | 'Reach' | 'Hard reach';
@@ -40,14 +46,16 @@ export interface SchoolChance {
   bucket: Bucket;
 }
 
-// A neutral "holistic" weighting used to score you (matches the app's default split).
+// Self-rank weighting. Unlike the rubric tool (where the participant chooses the weights), here we
+// fix a realistic split so chances feel right: academics (GPA + test) carry ~60%, the soft criteria
+// share the remaining ~40%. So a very low GPA can't read as a Safety. (Randy, 06-24.)
 const HOLISTIC: Weights = {
-  grades: 17,
-  testScore: 17,
-  communityService: 17,
-  extracurriculars: 17,
-  leadership: 16,
-  lifeExperience: 16,
+  grades: 30,
+  testScore: 30,
+  communityService: 10,
+  extracurriculars: 10,
+  leadership: 10,
+  lifeExperience: 10,
 };
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
@@ -68,7 +76,8 @@ export function profileToApplicant(p: SelfProfile): Applicant {
     firstGen: false,
     attributes: {
       grades: clamp01(p.gpa / 4),
-      testScore: clamp01((p.sat - 400) / 1200),
+      // SAT 400–1600 and ACT 1–36 both normalize to 0..1 (concordance-ish).
+      testScore: clamp01(p.testType === 'ACT' ? (p.act - 1) / 35 : (p.sat - 400) / 1200),
       communityService: clamp01(p.communityService),
       extracurriculars: clamp01(p.extracurriculars),
       leadership: clamp01(p.leadership),
@@ -104,8 +113,9 @@ export function computeChances(
     const mean = poolScores.reduce((s, x) => s + x, 0) / n;
     const scale = Math.max(1e-4, stddev(poolScores, mean) * 0.6);
 
-    // URM applies a modest upward shift (~0.8 SD) to the effective score.
-    const youScore = rawScore + (profile.urm ? scale * 0.8 : 0);
+    // URM and legacy each apply a modest upward shift to the effective score (they can stack).
+    const youScore =
+      rawScore + (profile.urm ? scale * 0.8 : 0) + (profile.legacy ? scale * 0.7 : 0);
 
     const below = poolScores.reduce((c, s) => c + (s <= youScore ? 1 : 0), 0);
     const percentile = (below / n) * 100;

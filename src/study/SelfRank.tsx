@@ -28,14 +28,19 @@ const SOFT: { key: keyof SelfProfile; label: string }[] = [
  * halves Randy wants to fuse). Chances are computed against the simulated pool — not real.
  */
 export function SelfRank({ config }: { config: SimConfig }) {
+  // Start at the floor (no pre-filled 3.5 / 1300), so a "typical" default doesn't anchor people —
+  // they drag up to their own numbers. (Randy, 06-24.)
   const [profile, setProfile] = useState<SelfProfile>({
-    gpa: 3.5,
-    sat: 1300,
-    extracurriculars: 0.6,
-    leadership: 0.6,
-    communityService: 0.6,
-    lifeExperience: 0.5,
+    gpa: 0,
+    testType: 'SAT',
+    sat: 400,
+    act: 1,
+    extracurriculars: 0,
+    leadership: 0,
+    communityService: 0,
+    lifeExperience: 0,
     urm: false,
+    legacy: false,
   });
 
   const pool = useMemo(() => generateApplicantPool(config), [config]);
@@ -94,22 +99,48 @@ export function SelfRank({ config }: { config: SimConfig }) {
 
             <label className="slider">
               <div className="slider__top">
-                <span className="slider__label">SAT</span>
+                <span className="testpick" role="group" aria-label="Standardized test">
+                  <button
+                    className={`testpick__btn ${profile.testType === 'SAT' ? 'is-on' : ''}`}
+                    onClick={() => update({ testType: 'SAT' })}
+                  >
+                    SAT
+                  </button>
+                  <button
+                    className={`testpick__btn ${profile.testType === 'ACT' ? 'is-on' : ''}`}
+                    onClick={() => update({ testType: 'ACT' })}
+                  >
+                    ACT
+                  </button>
+                </span>
                 <span className="slider__chip">
-                  <strong>{profile.sat}</strong>
-                  <em>/ 1600</em>
+                  <strong>{profile.testType === 'SAT' ? profile.sat : profile.act}</strong>
+                  <em>/ {profile.testType === 'SAT' ? 1600 : 36}</em>
                 </span>
               </div>
-              <input
-                type="range"
-                min={400}
-                max={1600}
-                step={10}
-                value={profile.sat}
-                style={{ '--fill': `${((profile.sat - 400) / 1200) * 100}%` } as CSSProperties}
-                onChange={(e) => update({ sat: Number(e.target.value) })}
-                aria-label="SAT"
-              />
+              {profile.testType === 'SAT' ? (
+                <input
+                  type="range"
+                  min={400}
+                  max={1600}
+                  step={10}
+                  value={profile.sat}
+                  style={{ '--fill': `${((profile.sat - 400) / 1200) * 100}%` } as CSSProperties}
+                  onChange={(e) => update({ sat: Number(e.target.value) })}
+                  aria-label="SAT"
+                />
+              ) : (
+                <input
+                  type="range"
+                  min={1}
+                  max={36}
+                  step={1}
+                  value={profile.act}
+                  style={{ '--fill': `${((profile.act - 1) / 35) * 100}%` } as CSSProperties}
+                  onChange={(e) => update({ act: Number(e.target.value) })}
+                  aria-label="ACT"
+                />
+              )}
             </label>
 
             {SOFT.map((s) => {
@@ -146,6 +177,15 @@ export function SelfRank({ config }: { config: SimConfig }) {
                 onChange={(e) => update({ urm: e.target.checked })}
               />
               <span>First-generation / underrepresented background</span>
+            </label>
+
+            <label className="selfrank__check">
+              <input
+                type="checkbox"
+                checked={!!profile.legacy}
+                onChange={(e) => update({ legacy: e.target.checked })}
+              />
+              <span>Legacy applicant (family attended)</span>
             </label>
           </div>
         </section>
