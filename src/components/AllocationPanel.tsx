@@ -19,6 +19,8 @@ interface Props {
   ctaLabel?: string;
   /** Small label above the title. Pass null to hide it (the study flow has its own progress bar). */
   kicker?: string | null;
+  /** Set false to hide the footer commit button — e.g. when the parent renders it elsewhere. */
+  showAction?: boolean;
   onFinalize: () => void;
   onChange: (key: Criterion['key'], value: number) => void;
   /** Fired when a slider drag begins, so the parent can switch the donut to live mode + log it. */
@@ -39,6 +41,7 @@ export function AllocationPanel({
   canFinalize,
   ctaLabel = 'Finalize rubric',
   kicker = 'Step 01',
+  showAction = true,
   onFinalize,
   onChange,
   onDragStart,
@@ -105,19 +108,21 @@ export function AllocationPanel({
         })}
       </div>
 
-      <div className="rubric__footer">
-        {finalized ? (
-          <span className="rubric__status">✓ Rubric finalized</span>
-        ) : (
-          <button
-            className="btn btn--primary"
-            disabled={locked || canFinalize === false}
-            onClick={onFinalize}
-          >
-            {canFinalize === false ? 'Balance to 100 to finalize' : ctaLabel}
-          </button>
-        )}
-      </div>
+      {showAction && (
+        <div className="rubric__footer">
+          {finalized ? (
+            <span className="rubric__status">✓ Rubric finalized</span>
+          ) : (
+            <button
+              className="btn btn--primary"
+              disabled={locked || canFinalize === false}
+              onClick={onFinalize}
+            >
+              {canFinalize === false ? 'Balance to 100 to finalize' : ctaLabel}
+            </button>
+          )}
+        </div>
+      )}
     </section>
   );
 }

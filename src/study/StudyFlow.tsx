@@ -96,6 +96,10 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   // total here to show the "doesn't add to 100 — revise" popup. (Randy, 06-24: no auto-balance,
   // gate at submit instead.)
   const [rubricError, setRubricError] = useState<number | null>(null);
+  // How the 100-pt rule is enforced — a demo toggle so we can show Randy both:
+  //   'disabled' → the Finalize button stays greyed out until the total hits 100
+  //   'popup'    → the button is live; submitting off-100 pops the "revise" modal
+  const [gateStyle, setGateStyle] = useState<'disabled' | 'popup'>('disabled');
 
   // Randomize the dream-school order once per session so Harvard (or any one school) at the top
   // doesn't anchor people's aspirations. Shuffled in a ref-stable memo, not during render.
@@ -197,6 +201,22 @@ export function StudyFlow({ config }: { config: SimConfig }) {
 
   return (
     <div className="study">
+      {(step === 'pre' || step === 'post') && (
+        <div className="gate-toggle" role="group" aria-label="100-point rule style">
+          <button
+            className={`gate-toggle__btn ${gateStyle === 'disabled' ? 'is-on' : ''}`}
+            onClick={() => setGateStyle('disabled')}
+          >
+            Greyed-out
+          </button>
+          <button
+            className={`gate-toggle__btn ${gateStyle === 'popup' ? 'is-on' : ''}`}
+            onClick={() => setGateStyle('popup')}
+          >
+            Popup
+          </button>
+        </div>
+      )}
       <header className="study__bar">
         <span className="study__brand">College Admissions</span>
         <ol className="study__progress" aria-label="Progress">
@@ -352,6 +372,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
               mode={pre.mode}
               locked={false}
               finalized={false}
+              canFinalize={gateStyle === 'disabled' ? pre.total === 100 : undefined}
               ctaLabel="Submit rubric"
               kicker={null}
               onFinalize={finishPre}
@@ -397,8 +418,10 @@ export function StudyFlow({ config }: { config: SimConfig }) {
                 mode={post.mode}
                 locked={false}
                 finalized={false}
+                canFinalize={gateStyle === 'disabled' ? post.total === 100 : undefined}
                 ctaLabel="Finalize"
                 kicker={null}
+                showAction={!config.ui.showPostPie}
                 onFinalize={finishPost}
                 onChange={post.handleChange}
                 onDragStart={post.handleDragStart}
@@ -415,6 +438,21 @@ export function StudyFlow({ config }: { config: SimConfig }) {
                 </div>
               )}
             </div>
+            {/* Finalize sits in its own box below the live result — the participant commits
+                after seeing the consequence. */}
+            {config.ui.showPostPie && (
+              <div className="panel finalizebox">
+                <button
+                  className="btn btn--primary"
+                  disabled={gateStyle === 'disabled' && post.total !== 100}
+                  onClick={finishPost}
+                >
+                  {gateStyle === 'disabled' && post.total !== 100
+                    ? 'Balance to 100 to finalize'
+                    : 'Finalize'}
+                </button>
+              </div>
+            )}
           </section>
         )}
 
