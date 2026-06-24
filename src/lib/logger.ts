@@ -5,17 +5,19 @@
 // reconstruct ORDER, DWELL TIME, and REVISIONS — not just the final rubric.
 // Events buffer in memory; `saveResponse()` flushes the whole session.
 //
-// Storage is deliberately behind ONE function (`flush`) so we can swap the
-// current console/localStorage sink for a Google Sheet (Apps Script POST) later
-// without touching any call site. (DEV_NOTES Plan A/B.)
+// Storage lives behind ONE function (`saveResponse`): it POSTs the whole session to a Google Apps
+// Script web app, which appends a WIDE row (one per participant: pre/post/delta + demographics) and
+// LONG rows (one per logged event) to the Sheet. A localStorage copy is always kept as a backup.
+// See google-apps-script.gs in the repo root for the script + deploy steps.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface LoggedEvent {
-  /** Milliseconds since session start (monotonic, sub-ms precision). */
-  t: number;
+  /** Milliseconds since the session started (monotonic, sub-ms precision). */
+  elapsedMs: number;
   /** Wall-clock ISO timestamp. */
-  ts: string;
-  type: string;
+  timestamp: string;
+  /** What happened (e.g. "weight_change", "page_enter"). */
+  event: string;
   [key: string]: unknown;
 }
 
@@ -25,12 +27,12 @@ const sessionId = `${Date.now().toString(36)}-${Math.floor(performance.now()).to
 
 const buffer: LoggedEvent[] = [];
 
-/** Record one event. `type` is a short verb; `data` is any structured payload. */
-export function logEvent(type: string, data: Record<string, unknown> = {}): void {
+/** Record one event. `event` is a short verb; `data` is any structured payload. */
+export function logEvent(event: string, data: Record<string, unknown> = {}): void {
   buffer.push({
-    t: Math.round((performance.now() - t0) * 1000) / 1000,
-    ts: new Date().toISOString(),
-    type,
+    elapsedMs: Math.round((performance.now() - t0) * 1000) / 1000,
+    timestamp: new Date().toISOString(),
+    event,
     ...data,
   });
 }
@@ -44,34 +46,57 @@ export function getSessionId(): string {
   return sessionId;
 }
 
+// Deployed Google Apps Script web-app URL (ends in /exec). Paste yours here once deployed (see
+// google-apps-script.gs). Left blank → responses are kept in localStorage only, so nothing is lost.
+const SHEET_ENDPOINT =
+  'https://script.google.com/macros/s/AKfycbyIAKvEHSA6mj-VKBlrRCl1sJmXZ0GJ1jy8L9TGyvFBV4V6ILC7Ai6wXTAI725g9N3lzg/exec';
+
 /**
- * Flush the full response (final state + every logged event). Swap the body for a
- * `fetch()` POST to a Google Apps Script endpoint when we wire up the Sheet — the
- * call sites (e.g. handleFinalize) don't change.
+ * Flush the response to the Google Sheet: a WIDE row (`meta.wide`, one per participant) plus the
+ * LONG event log. The Apps Script writes whatever columns `wide` contains, so the saved columns are
+ * defined entirely by the caller. We always keep a localStorage backup too.
  */
-export async function saveResponse(meta: Record<string, unknown> = {}): Promise<void> {
+export async function saveResponse(
+  meta: { name?: string; wide?: Record<string, unknown> } = {},
+): Promise<void> {
   const payload = {
-    durationMs: Math.round(performance.now() - t0),
-    ...meta,
+    name: meta.name ?? '',
+    // Timing fields are added here so callers don't have to thread them through.
+    wide: {
+      submittedAt: new Date().toISOString(),
+      durationMs: Math.round(performance.now() - t0),
+      ...(meta.wide ?? {}),
+    },
     events: getEvents(),
   };
 
-  // Store in the local responses database (server/server.mjs → data/responses.db). If the server
-  // isn't running (e.g. the static hub build), fall back to localStorage so nothing is lost.
-  try {
-    const r = await fetch('/api/response', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    if (!r.ok) throw new Error(`bad status ${r.status}`);
-    console.info('[saveResponse] stored in database', (payload as { name?: string }).name);
-  } catch (e) {
+  const backupLocally = () => {
     try {
       localStorage.setItem(`response:${sessionId}`, JSON.stringify(payload));
     } catch {
-      // localStorage can throw in private mode / sandboxed iframes — logging is best-effort.
+      // localStorage can throw in private mode / sandboxed iframes — best-effort.
     }
-    console.warn('[saveResponse] database unavailable — saved to localStorage instead', e);
+  };
+
+  if (!SHEET_ENDPOINT) {
+    backupLocally();
+    console.warn('[saveResponse] no Google Sheet endpoint set — saved to localStorage only');
+    return;
+  }
+
+  try {
+    // Apps Script web apps accept a simple text/plain POST; `no-cors` lets the request through
+    // without a readable (CORS-blocked) response — fine for fire-and-forget logging.
+    await fetch(SHEET_ENDPOINT, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload),
+    });
+    backupLocally();
+    console.info('[saveResponse] sent to Google Sheet', payload.name);
+  } catch (e) {
+    backupLocally();
+    console.warn('[saveResponse] send failed — saved to localStorage instead', e);
   }
 }

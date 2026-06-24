@@ -76,8 +76,8 @@ function Outcome({ result, dimmed }: { result: SimResult; dimmed?: boolean }) {
 /**
  * Version 2 — the study instrument. A multi-step flow that measures the rubric BEFORE and AFTER
  * the participant sees the demographic consequence of their choices: welcome → consent → about-you
- * → set rubric (pre, blind) → see the split (learn) → revise (post) → done. Random condition
- * assignment + millisecond interaction logging throughout (#8).
+ * → set rubric (pre, blind) → see the split (learn) → revise (post) → demographics → done.
+ * Millisecond interaction logging throughout; the response is keyed by the participant's name.
  */
 export function StudyFlow({ config }: { config: SimConfig }) {
   const [step, setStep] = useState<Step>('welcome');
@@ -112,9 +112,6 @@ export function StudyFlow({ config }: { config: SimConfig }) {
     return arr;
   }, [config.schools]);
 
-  // Random A/B condition, fixed for the session (the manipulation goes here later). Assigned in
-  // the mount effect so we never call an impure function during render.
-  const conditionRef = useRef<'A' | 'B'>('A');
   const stepEnteredAt = useRef(0);
 
   const pre = useRubric(config, 'pre');
@@ -126,15 +123,14 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   const postResult = useMemo(() => runSim(pool, post.weights, config), [pool, post.weights, config]);
 
   useEffect(() => {
-    conditionRef.current = Math.random() < 0.5 ? 'A' : 'B';
     stepEnteredAt.current = performance.now();
-    logEvent('session_start', { flow: 'study', condition: conditionRef.current });
+    logEvent('session_start', { flow: 'study' });
     logEvent('page_enter', { step: 'welcome' });
   }, []);
 
   const go = (next: Step) => {
     const now = performance.now();
-    logEvent('page_leave', { step, dwellMs: Math.round(now - stepEnteredAt.current) });
+    logEvent('page_leave', { step, msOnPage: Math.round(now - stepEnteredAt.current) });
     stepEnteredAt.current = now;
     logEvent('page_enter', { step: next });
     setStep(next);
@@ -182,17 +178,27 @@ export function StudyFlow({ config }: { config: SimConfig }) {
 
   const finishStudy = () => {
     const schoolLabel = config.schools.find((s) => s.id === school)?.label ?? school;
-    void saveResponse({
+    const postWeights = post.weights;
+    // The WIDE row — one row per participant, keyed by name. Add/rename/remove columns HERE; the
+    // Sheet writes whatever keys we send, so no Apps Script change is needed for column tweaks.
+    const wide: Record<string, string | number | null> = {
       name,
-      condition: conditionRef.current,
-      school: { id: school, label: schoolLabel },
+      school: schoolLabel,
       race,
-      demographics: { dob, age: ageFromDob(dob), gender, hispanic, income },
-      preWeights: preCaptured,
-      postWeights: post.weights,
-      preOutcome: { breakdown: preResult.breakdown, firstGenPct: preResult.firstGenPct },
-      postOutcome: { breakdown: postResult.breakdown, firstGenPct: postResult.firstGenPct },
-    });
+      dob,
+      age: ageFromDob(dob),
+      gender,
+      hispanic,
+      income,
+    };
+    for (const c of config.criteria) {
+      const before = preCaptured?.[c.key] ?? 0;
+      const after = postWeights[c.key] ?? 0;
+      wide[`pre_${c.key}`] = before;
+      wide[`post_${c.key}`] = after;
+      wide[`delta_${c.key}`] = after - before;
+    }
+    void saveResponse({ name, wide });
     logEvent('study_complete', {});
     go('done');
   };

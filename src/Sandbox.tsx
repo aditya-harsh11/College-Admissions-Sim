@@ -88,11 +88,10 @@ export function Sandbox({ config }: { config: SimConfig }) {
   const handleFinalize = () => {
     logEvent('finalize', { weights: rubric.weights, mode: rubric.mode, total: rubric.total });
     void saveResponse({
-      weights: rubric.weights,
-      mode: rubric.mode,
-      total: rubric.total,
-      outcome: {
-        breakdown: result.breakdown,
+      wide: {
+        mode: rubric.mode,
+        total: rubric.total,
+        ...rubric.weights,
         firstGenPct: result.firstGenPct,
         avgTestScore: result.avgTestScore,
       },

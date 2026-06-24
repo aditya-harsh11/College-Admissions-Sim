@@ -65,11 +65,11 @@ export function useRubric(config: SimConfig, phase = 'rubric') {
     }
     logEvent('weight_change', {
       phase,
-      key,
-      from: weights[key],
-      to: next[key],
+      criterion: key,
+      fromPts: weights[key],
+      toPts: next[key],
       mode,
-      total: sumWeights(next),
+      totalPts: sumWeights(next),
     });
     setWeights(next);
   };
@@ -82,7 +82,7 @@ export function useRubric(config: SimConfig, phase = 'rubric') {
 
   const handleDragStart = (key: AttributeKey) => {
     setDragging(true);
-    logEvent('drag_start', { phase, key });
+    logEvent('drag_start', { phase, criterion: key });
   };
 
   const setAll = (w: Weights) => setWeights({ ...w });
