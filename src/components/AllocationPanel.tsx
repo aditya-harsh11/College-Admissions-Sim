@@ -13,6 +13,8 @@ interface Props {
   canFinalize: boolean;
   /** Primary-button label when ready to commit (study flow uses "Continue"). */
   ctaLabel?: string;
+  /** Small label above the title. Pass null to hide it (the study flow has its own progress bar). */
+  kicker?: string | null;
   onFinalize: () => void;
   onChange: (key: Criterion['key'], value: number) => void;
   /** Fired when a slider drag begins, so the parent can switch the donut to live mode + log it. */
@@ -32,6 +34,7 @@ export function AllocationPanel({
   finalized,
   canFinalize,
   ctaLabel = 'Finalize rubric',
+  kicker = 'Step 01',
   onFinalize,
   onChange,
   onDragStart,
@@ -44,7 +47,7 @@ export function AllocationPanel({
     <section className={`panel rubric ${locked ? 'rubric--locked' : ''}`}>
       <header className="panel__head">
         <div>
-          <p className="panel__kicker">Step 01</p>
+          {kicker && <p className="panel__kicker">{kicker}</p>}
           <h2 className="panel__title">Your rubric</h2>
         </div>
         <div className={`budget ${valid ? '' : 'budget--invalid'}`}>

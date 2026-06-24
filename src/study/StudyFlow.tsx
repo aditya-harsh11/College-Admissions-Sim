@@ -50,9 +50,21 @@ function Outcome({ result, dimmed }: { result: SimResult; dimmed?: boolean }) {
 export function StudyFlow({ config }: { config: SimConfig }) {
   const [step, setStep] = useState<Step>('welcome');
   const [name, setName] = useState('');
-  const [school, setSchool] = useState(config.schools[0]?.id ?? '');
-  const [group, setGroup] = useState(config.groups[0]?.id ?? '');
+  // Start unselected (no default) so no single option anchors the participant.
+  const [school, setSchool] = useState('');
+  const [group, setGroup] = useState('');
   const [consented, setConsented] = useState(false);
+
+  // Randomize the dream-school order once per session so Harvard (or any one school) at the top
+  // doesn't anchor people's aspirations. Shuffled in a ref-stable memo, not during render.
+  const schoolOrder = useMemo(() => {
+    const arr = [...config.schools];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }, [config.schools]);
 
   // Random A/B condition, fixed for the session (the manipulation goes here later). Assigned in
   // the mount effect so we never call an impure function during render.
@@ -89,8 +101,9 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   };
 
   const startPost = () => {
-    // Post is a fresh second measure: the participant rebuilds from 0 after seeing the result
-    // (not pre-filled with their first answer).
+    // Reveal-then-revise: seed the post rubric from their pre answer so they REVISE (nudge from
+    // where they were) rather than rebuild from scratch. (Randy, 06-24.)
+    if (preCaptured) post.setAll(preCaptured);
     go('post');
   };
 
@@ -217,7 +230,10 @@ export function StudyFlow({ config }: { config: SimConfig }) {
                   logEvent('field_change', { field: 'school', value: e.target.value });
                 }}
               >
-                {config.schools.map((s) => (
+                <option value="" disabled>
+                  Select your dream school
+                </option>
+                {schoolOrder.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.label}
                   </option>
@@ -235,6 +251,9 @@ export function StudyFlow({ config }: { config: SimConfig }) {
                   logEvent('field_change', { field: 'group', value: e.target.value });
                 }}
               >
+                <option value="" disabled>
+                  Select a group
+                </option>
                 {config.groups.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.label}
@@ -245,7 +264,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
 
             <button
               className="btn btn--primary"
-              disabled={!name.trim()}
+              disabled={!name.trim() || !school || !group}
               onClick={() => go('pre')}
             >
               Continue
@@ -266,6 +285,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
               finalized={false}
               canFinalize={pre.total === 100}
               ctaLabel="Submit rubric"
+              kicker={null}
               onFinalize={finishPre}
               onChange={pre.handleChange}
               onDragStart={pre.handleDragStart}
@@ -283,6 +303,10 @@ export function StudyFlow({ config }: { config: SimConfig }) {
               {pool.length.toLocaleString()} applicants.
             </p>
             <Outcome result={preResult} />
+            <p className="study__lead">
+              Now that you’ve seen the class your rubric admits, we’d like to give you the
+              opportunity to revise your rubric.
+            </p>
             <button className="btn btn--primary" onClick={startPost}>
               Revise my rubric
             </button>
@@ -307,6 +331,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
                 finalized={false}
                 canFinalize={post.total === 100}
                 ctaLabel="Finalize"
+                kicker={null}
                 onFinalize={finishPost}
                 onChange={post.handleChange}
                 onDragStart={post.handleDragStart}
@@ -331,54 +356,12 @@ export function StudyFlow({ config }: { config: SimConfig }) {
             <p className="panel__kicker">All done</p>
             <h2 className="study__h2">Thank you.</h2>
             <p className="study__lead">
-              Your responses have been recorded. Here’s how your rubric changed once you saw the
-              result:
+              Your responses have been recorded. Thank you for taking part.
             </p>
-            <BeforeAfter config={config} pre={preCaptured} post={post.weights} />
             <p className="study__note">You can close this tab now.</p>
           </section>
         )}
       </main>
     </div>
-  );
-}
-
-/** Small before/after table of the two rubrics, highlighting what the participant changed. */
-function BeforeAfter({
-  config,
-  pre,
-  post,
-}: {
-  config: SimConfig;
-  pre: Weights | null;
-  post: Weights;
-}) {
-  if (!pre) return null;
-  return (
-    <table className="study__ba">
-      <thead>
-        <tr>
-          <th>Criterion</th>
-          <th>Before</th>
-          <th>After</th>
-          <th>Change</th>
-        </tr>
-      </thead>
-      <tbody>
-        {config.criteria.map((c) => {
-          const delta = post[c.key] - pre[c.key];
-          return (
-            <tr key={c.key}>
-              <td>{c.label}</td>
-              <td>{pre[c.key]}</td>
-              <td>{post[c.key]}</td>
-              <td className={delta > 0 ? 'delta--up' : delta < 0 ? 'delta--down' : 'delta--flat'}>
-                {delta > 0 ? `+${delta}` : delta < 0 ? delta : '0'}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
   );
 }
