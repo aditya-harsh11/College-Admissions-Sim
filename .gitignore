@@ -12,9 +12,6 @@ dist
 dist-ssr
 *.local
 
-# Local responses database (created by server/server.mjs)
-data/
-
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
