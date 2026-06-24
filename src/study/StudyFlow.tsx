@@ -10,8 +10,17 @@ import { generateApplicantPool } from '../sim/generator';
 import { runSim } from '../sim/scoring';
 import type { SimConfig, SimResult, Weights } from '../sim/types';
 
-type Step = 'welcome' | 'consent' | 'info' | 'pre' | 'learn' | 'post' | 'done';
-const ORDER: Step[] = ['welcome', 'consent', 'info', 'pre', 'learn', 'post', 'done'];
+type Step = 'welcome' | 'consent' | 'info' | 'pre' | 'learn' | 'post' | 'demographics' | 'done';
+const ORDER: Step[] = [
+  'welcome',
+  'consent',
+  'info',
+  'pre',
+  'learn',
+  'post',
+  'demographics',
+  'done',
+];
 const STEP_LABELS: Record<Step, string> = {
   welcome: 'Welcome',
   consent: 'Consent',
@@ -19,8 +28,31 @@ const STEP_LABELS: Record<Step, string> = {
   pre: 'Your rubric',
   learn: 'The result',
   post: 'Revise',
+  demographics: 'A few questions',
   done: 'Done',
 };
+
+// Demographic options. Race uses the US Census standard set; ethnicity (Hispanic origin) is asked
+// separately, per OMB/Census convention. Easy to edit here if Randy wants different categories.
+const RACE_OPTIONS = [
+  'White',
+  'Black or African American',
+  'Asian',
+  'American Indian or Alaska Native',
+  'Native Hawaiian or Other Pacific Islander',
+  'Some other race',
+  'Prefer not to say',
+];
+const GENDER_OPTIONS = ['Woman', 'Man', 'Non-binary', 'Prefer to self-describe', 'Prefer not to say'];
+const HISPANIC_OPTIONS = ['No', 'Yes', 'Prefer not to say'];
+const INCOME_OPTIONS = [
+  'Under $30,000',
+  '$30,000–$59,999',
+  '$60,000–$99,999',
+  '$100,000–$199,999',
+  '$200,000 or more',
+  'Prefer not to say',
+];
 
 /** Demographic outcome (pie + legend + headline stats) — reused on the learn & post steps. */
 function Outcome({ result, dimmed }: { result: SimResult; dimmed?: boolean }) {
@@ -52,7 +84,13 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   const [name, setName] = useState('');
   // Start unselected (no default) so no single option anchors the participant.
   const [school, setSchool] = useState('');
-  const [group, setGroup] = useState('');
+  // Race is the participant's own group — kept early because it's central to the hypothesis. The
+  // rest of the demographics are collected at the END so they don't prime the rubric task.
+  const [race, setRace] = useState('');
+  const [dob, setDob] = useState('');
+  const [gender, setGender] = useState('');
+  const [hispanic, setHispanic] = useState('');
+  const [income, setIncome] = useState('');
   const [consented, setConsented] = useState(false);
   // When the participant tries to submit a rubric that doesn't sum to 100, hold the offending
   // total here to show the "doesn't add to 100 — revise" popup. (Randy, 06-24: no auto-balance,
@@ -123,18 +161,35 @@ export function StudyFlow({ config }: { config: SimConfig }) {
       return;
     }
     logEvent('rubric_captured', { phase: 'post', weights: post.weights });
+    // Demographics come AFTER the task so they don't prime it; save happens at the very end.
+    go('demographics');
+  };
+
+  /** Compute whole-years age from a YYYY-MM-DD date of birth (Randy: collect DOB, derive age). */
+  const ageFromDob = (iso: string): number | null => {
+    if (!iso) return null;
+    const [y, m, d] = iso.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    const now = new Date();
+    let age = now.getFullYear() - y;
+    if (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d)) age -= 1;
+    return age;
+  };
+
+  const finishStudy = () => {
     const schoolLabel = config.schools.find((s) => s.id === school)?.label ?? school;
-    const groupLabel = config.groups.find((g) => g.id === group)?.label ?? group;
     void saveResponse({
       name,
       condition: conditionRef.current,
       school: { id: school, label: schoolLabel },
-      group: { id: group, label: groupLabel },
+      race,
+      demographics: { dob, age: ageFromDob(dob), gender, hispanic, income },
       preWeights: preCaptured,
       postWeights: post.weights,
       preOutcome: { breakdown: preResult.breakdown, firstGenPct: preResult.firstGenPct },
       postOutcome: { breakdown: postResult.breakdown, firstGenPct: postResult.firstGenPct },
     });
+    logEvent('study_complete', {});
     go('done');
   };
 
@@ -256,21 +311,21 @@ export function StudyFlow({ config }: { config: SimConfig }) {
             </label>
 
             <label className="study__field">
-              <span className="study__fieldlabel">Your group</span>
+              <span className="study__fieldlabel">Your race</span>
               <select
                 className="study__select"
-                value={group}
+                value={race}
                 onChange={(e) => {
-                  setGroup(e.target.value);
-                  logEvent('field_change', { field: 'group', value: e.target.value });
+                  setRace(e.target.value);
+                  logEvent('field_change', { field: 'race', value: e.target.value });
                 }}
               >
                 <option value="" disabled>
                   Select a group
                 </option>
-                {config.groups.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.label}
+                {RACE_OPTIONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
                   </option>
                 ))}
               </select>
@@ -278,7 +333,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
 
             <button
               className="btn btn--primary"
-              disabled={!name.trim() || !school || !group}
+              disabled={!name.trim() || !school || !race}
               onClick={() => go('pre')}
             >
               Continue
@@ -360,6 +415,98 @@ export function StudyFlow({ config }: { config: SimConfig }) {
                 </div>
               )}
             </div>
+          </section>
+        )}
+
+        {step === 'demographics' && (
+          <section className="study__card study__card--prose">
+            <p className="panel__kicker">Almost done</p>
+            <h2 className="study__h2">A few questions about you</h2>
+            <p className="study__note">
+              These help us understand who took part. Answer as much as you’re comfortable with.
+            </p>
+
+            <label className="study__field">
+              <span className="study__fieldlabel">Date of birth</span>
+              <input
+                className="study__input"
+                type="date"
+                value={dob}
+                onChange={(e) => {
+                  setDob(e.target.value);
+                  logEvent('field_change', { field: 'dob', value: e.target.value });
+                }}
+              />
+            </label>
+
+            <label className="study__field">
+              <span className="study__fieldlabel">Gender</span>
+              <select
+                className="study__select"
+                value={gender}
+                onChange={(e) => {
+                  setGender(e.target.value);
+                  logEvent('field_change', { field: 'gender', value: e.target.value });
+                }}
+              >
+                <option value="" disabled>
+                  Select…
+                </option>
+                {GENDER_OPTIONS.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="study__field">
+              <span className="study__fieldlabel">
+                Are you of Hispanic, Latino, or Spanish origin?
+              </span>
+              <select
+                className="study__select"
+                value={hispanic}
+                onChange={(e) => {
+                  setHispanic(e.target.value);
+                  logEvent('field_change', { field: 'hispanic', value: e.target.value });
+                }}
+              >
+                <option value="" disabled>
+                  Select…
+                </option>
+                {HISPANIC_OPTIONS.map((h) => (
+                  <option key={h} value={h}>
+                    {h}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="study__field">
+              <span className="study__fieldlabel">Family income</span>
+              <select
+                className="study__select"
+                value={income}
+                onChange={(e) => {
+                  setIncome(e.target.value);
+                  logEvent('field_change', { field: 'income', value: e.target.value });
+                }}
+              >
+                <option value="" disabled>
+                  Select…
+                </option>
+                {INCOME_OPTIONS.map((i) => (
+                  <option key={i} value={i}>
+                    {i}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button className="btn btn--primary" onClick={finishStudy}>
+              Finish
+            </button>
           </section>
         )}
 
