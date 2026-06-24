@@ -31,11 +31,12 @@ export const DEFAULT_CONFIG: SimConfig = {
     // don't anchor how participants allocate. (Randy: keep for now — options to show Trish.)
     showPresets: true,
     // Study version (v3+): hide the applicant-pool comparison bars, start sliders blank at 0,
-    // open in manual, and (Ben's refinement) crowd out once the 100-pt budget is full.
+    // open in manual. (Randy 06-24: no auto-balance — points move independently, the total can run
+    // over/under 100, and the participant is gated at submit until it sums to exactly 100.)
     showPoolBar: false,
     startBlank: true,
     defaultMode: 'manual',
-    crowdOutAt100: true,
+    crowdOutAt100: false,
     // v4: run the multi-step study flow (welcome → consent → info → pre → learn → post).
     flow: 'study',
     // v4: reveal-then-revise — pie visible during the POST rubric. Flip false for a blind sibling.

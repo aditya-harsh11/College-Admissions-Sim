@@ -9,8 +9,12 @@ interface Props {
   /** When true the rubric is committed: inputs disabled and the panel greys out. */
   locked: boolean;
   finalized: boolean;
-  /** Only allow committing when the budget is exactly spent (total === 100). */
-  canFinalize: boolean;
+  /**
+   * Legacy gate (Sandbox): when `false`, the commit button is disabled until the budget hits 100.
+   * Omit it (study flow) to keep the button always enabled — the parent validates on submit and
+   * shows the "doesn't add to 100" popup instead.
+   */
+  canFinalize?: boolean;
   /** Primary-button label when ready to commit (study flow uses "Continue"). */
   ctaLabel?: string;
   /** Small label above the title. Pass null to hide it (the study flow has its own progress bar). */
@@ -105,8 +109,12 @@ export function AllocationPanel({
         {finalized ? (
           <span className="rubric__status">✓ Rubric finalized</span>
         ) : (
-          <button className="btn btn--primary" disabled={!canFinalize} onClick={onFinalize}>
-            {canFinalize ? ctaLabel : 'Balance to 100 to finalize'}
+          <button
+            className="btn btn--primary"
+            disabled={locked || canFinalize === false}
+            onClick={onFinalize}
+          >
+            {canFinalize === false ? 'Balance to 100 to finalize' : ctaLabel}
           </button>
         )}
       </div>

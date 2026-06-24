@@ -1149,3 +1149,51 @@ input[type='range']::-moz-range-thumb {
   color: var(--muted);
 }
 
+
+/* ───────────────────────────  Modal (rubric submit gate)  ─────────────────────────── */
+.modal__scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(27, 24, 21, 0.42);
+  backdrop-filter: blur(2px);
+  animation: modal-fade 0.16s ease-out;
+}
+.modal {
+  width: min(420px, 100%);
+  background: var(--panel);
+  border: 1.5px solid var(--ink);
+  border-radius: var(--r);
+  box-shadow: var(--shadow);
+  padding: 28px 26px 24px;
+  text-align: left;
+  animation: modal-pop 0.18s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.modal__title {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.32rem;
+  line-height: 1.2;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.modal__body {
+  color: var(--ink-soft);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+.modal .btn {
+  width: 100%;
+}
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

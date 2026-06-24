@@ -54,6 +54,10 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   const [school, setSchool] = useState('');
   const [group, setGroup] = useState('');
   const [consented, setConsented] = useState(false);
+  // When the participant tries to submit a rubric that doesn't sum to 100, hold the offending
+  // total here to show the "doesn't add to 100 — revise" popup. (Randy, 06-24: no auto-balance,
+  // gate at submit instead.)
+  const [rubricError, setRubricError] = useState<number | null>(null);
 
   // Randomize the dream-school order once per session so Harvard (or any one school) at the top
   // doesn't anchor people's aspirations. Shuffled in a ref-stable memo, not during render.
@@ -95,6 +99,11 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   };
 
   const finishPre = () => {
+    if (pre.total !== 100) {
+      setRubricError(pre.total);
+      logEvent('submit_blocked', { phase: 'pre', total: pre.total });
+      return;
+    }
     setPreCaptured({ ...pre.weights });
     logEvent('rubric_captured', { phase: 'pre', weights: pre.weights });
     go('learn');
@@ -108,6 +117,11 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   };
 
   const finishPost = () => {
+    if (post.total !== 100) {
+      setRubricError(post.total);
+      logEvent('submit_blocked', { phase: 'post', total: post.total });
+      return;
+    }
     logEvent('rubric_captured', { phase: 'post', weights: post.weights });
     const schoolLabel = config.schools.find((s) => s.id === school)?.label ?? school;
     const groupLabel = config.groups.find((g) => g.id === group)?.label ?? group;
@@ -283,7 +297,6 @@ export function StudyFlow({ config }: { config: SimConfig }) {
               mode={pre.mode}
               locked={false}
               finalized={false}
-              canFinalize={pre.total === 100}
               ctaLabel="Submit rubric"
               kicker={null}
               onFinalize={finishPre}
@@ -329,7 +342,6 @@ export function StudyFlow({ config }: { config: SimConfig }) {
                 mode={post.mode}
                 locked={false}
                 finalized={false}
-                canFinalize={post.total === 100}
                 ctaLabel="Finalize"
                 kicker={null}
                 onFinalize={finishPost}
@@ -362,6 +374,26 @@ export function StudyFlow({ config }: { config: SimConfig }) {
           </section>
         )}
       </main>
+
+      {rubricError !== null && (
+        <div
+          className="modal__scrim"
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setRubricError(null)}
+        >
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal__title">Your points add up to {rubricError}, not 100</h3>
+            <p className="modal__body">
+              Please adjust your rubric so the points total exactly <strong>100</strong> before
+              continuing.
+            </p>
+            <button className="btn btn--primary" onClick={() => setRubricError(null)}>
+              Revise
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
