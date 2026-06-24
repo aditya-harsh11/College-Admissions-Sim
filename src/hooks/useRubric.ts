@@ -68,7 +68,6 @@ export function useRubric(config: SimConfig, phase = 'rubric') {
       criterion: key,
       fromPts: weights[key],
       toPts: next[key],
-      mode,
       totalPts: sumWeights(next),
     });
     setWeights(next);

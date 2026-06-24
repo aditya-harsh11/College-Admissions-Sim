@@ -18,6 +18,7 @@ export interface LoggedEvent {
   timestamp: string;
   /** What happened (e.g. "weight_change", "page_enter"). */
   event: string;
+  /** Event-specific fields become their own columns in the Events tab. */
   [key: string]: unknown;
 }
 
@@ -27,7 +28,7 @@ const sessionId = `${Date.now().toString(36)}-${Math.floor(performance.now()).to
 
 const buffer: LoggedEvent[] = [];
 
-/** Record one event. `event` is a short verb; `data` is any structured payload. */
+/** Record one event. `event` is a short verb; `data` fields each become their own column. */
 export function logEvent(event: string, data: Record<string, unknown> = {}): void {
   buffer.push({
     elapsedMs: Math.round((performance.now() - t0) * 1000) / 1000,

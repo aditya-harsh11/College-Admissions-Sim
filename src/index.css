@@ -1230,10 +1230,14 @@ input[type='range']::-moz-range-thumb {
   color: var(--panel);
 }
 
-/* Finalize in its own bordered box below the live result on the revise step. */
-.finalizebox {
-  margin-top: 18px;
+/* Right column on the revise step: the live result, with the Finalize box stacked under it. */
+.study__resultcol {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(14px, 1.8vh, 20px);
+  min-height: 0;
 }
+/* Finalize in its own bordered box, directly below the live result (in the result column). */
 .finalizebox .btn {
   width: 100%;
 }

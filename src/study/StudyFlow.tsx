@@ -43,7 +43,7 @@ const RACE_OPTIONS = [
   'Some other race',
   'Prefer not to say',
 ];
-const GENDER_OPTIONS = ['Woman', 'Man', 'Non-binary', 'Prefer to self-describe', 'Prefer not to say'];
+const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary', 'Prefer to self-describe', 'Prefer not to say'];
 const HISPANIC_OPTIONS = ['No', 'Yes', 'Prefer not to say'];
 const INCOME_OPTIONS = [
   'Under $30,000',
@@ -124,7 +124,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
 
   useEffect(() => {
     stepEnteredAt.current = performance.now();
-    logEvent('session_start', { flow: 'study' });
+    logEvent('session_start');
     logEvent('page_enter', { step: 'welcome' });
   }, []);
 
@@ -433,32 +433,35 @@ export function StudyFlow({ config }: { config: SimConfig }) {
                 onDragStart={post.handleDragStart}
               />
               {config.ui.showPostPie && (
-                <div className="panel results">
-                  <header className="panel__head">
-                    <div>
-                      <p className="panel__kicker">Live result</p>
-                      <h2 className="panel__title">The class you’d admit</h2>
-                    </div>
-                  </header>
-                  <Outcome result={postResult} dimmed={post.mode === 'manual' && post.total !== 100} />
+                <div className="study__resultcol">
+                  <div className="panel results">
+                    <header className="panel__head">
+                      <div>
+                        <p className="panel__kicker">Live result</p>
+                        <h2 className="panel__title">The class you’d admit</h2>
+                      </div>
+                    </header>
+                    <Outcome
+                      result={postResult}
+                      dimmed={post.mode === 'manual' && post.total !== 100}
+                    />
+                  </div>
+                  {/* Finalize in its own box directly below the live result, in the same column
+                      (next to the rubric) — not full-width at the very bottom. */}
+                  <div className="panel finalizebox">
+                    <button
+                      className="btn btn--primary"
+                      disabled={gateStyle === 'disabled' && post.total !== 100}
+                      onClick={finishPost}
+                    >
+                      {gateStyle === 'disabled' && post.total !== 100
+                        ? 'Balance to 100 to finalize'
+                        : 'Finalize'}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
-            {/* Finalize sits in its own box below the live result — the participant commits
-                after seeing the consequence. */}
-            {config.ui.showPostPie && (
-              <div className="panel finalizebox">
-                <button
-                  className="btn btn--primary"
-                  disabled={gateStyle === 'disabled' && post.total !== 100}
-                  onClick={finishPost}
-                >
-                  {gateStyle === 'disabled' && post.total !== 100
-                    ? 'Balance to 100 to finalize'
-                    : 'Finalize'}
-                </button>
-              </div>
-            )}
           </section>
         )}
 
