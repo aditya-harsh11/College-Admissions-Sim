@@ -37,8 +37,9 @@ export const DEFAULT_CONFIG: SimConfig = {
     startBlank: true,
     defaultMode: 'manual',
     crowdOutAt100: false,
-    // v4: run the multi-step study flow (welcome → consent → info → pre → learn → post).
-    flow: 'study',
+    // v6: shifting-demographics study (welcome → consent → info → background → rubric → demographics).
+    // Use 'study' for the v4 pre/post flow, 'single' for the sandbox.
+    flow: 'shift',
     // v4: reveal-then-revise — pie visible during the POST rubric. Flip false for a blind sibling.
     showPostPie: true,
   },

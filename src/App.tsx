@@ -1,17 +1,17 @@
 import { Sandbox } from './Sandbox';
 import { StudyFlow } from './study/StudyFlow';
+import { ShiftStudy } from './study/ShiftStudy';
 import { DEFAULT_CONFIG } from './sim/config';
 
 const config = DEFAULT_CONFIG;
 
 /**
- * One switch: the single-page sandbox (Version 1) or the multi-step study instrument
- * (Version 2). Driven entirely by `config.ui.flow`, so a "version" is a config, not a fork.
+ * One switch, driven by `config.ui.flow` — a "version" is a config, not a fork:
+ *   `single` → single-page sandbox (v1)   ·   `study` → pre/post study flow (v4)
+ *   `shift`  → shifting-demographics study (v6)
  */
 export default function App() {
-  return config.ui.flow === 'study' ? (
-    <StudyFlow config={config} />
-  ) : (
-    <Sandbox config={config} />
-  );
+  if (config.ui.flow === 'shift') return <ShiftStudy config={config} />;
+  if (config.ui.flow === 'study') return <StudyFlow config={config} />;
+  return <Sandbox config={config} />;
 }

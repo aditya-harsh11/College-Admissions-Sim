@@ -61,8 +61,8 @@ export interface SimConfig {
     defaultMode: 'auto' | 'manual';
     /** Manual-mode refinement: once the total reaches 100, extra points crowd the others out. */
     crowdOutAt100: boolean;
-    /** Single-page sandbox (`single`) vs. the multi-step study flow (`study`). */
-    flow: 'single' | 'study';
+    /** `single` sandbox · `study` (v4 pre/post flow) · `shift` (v6 shifting-demographics). */
+    flow: 'single' | 'study' | 'shift';
     /** Study only: show the demographic pie during the POST rubric (reveal-then-revise) vs. blind. */
     showPostPie: boolean;
   };
