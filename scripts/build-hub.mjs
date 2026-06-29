@@ -17,7 +17,7 @@
 import { execSync } from 'node:child_process';
 import { cpSync, mkdirSync, rmSync } from 'node:fs';
 
-const VERSIONS = ['v1', 'v2', 'v3', 'v4', 'v5'];
+const VERSIONS = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6'];
 const STAGING = '.dist-staging';
 const run = (cmd) => execSync(cmd, { stdio: 'inherit' });
 const out = (cmd) => execSync(cmd).toString().trim();
