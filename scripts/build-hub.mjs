@@ -1,5 +1,6 @@
 // Build the "hub": one static site containing every version in its own subfolder, plus the
-// landing menu (hub/index.html) at the root. Output → dist/  (index.html, v1/, … v5/).
+// landing menu (hub/index.html) at the root and an "Old stuff" archive page (hub/old/) that
+// links to the retired builds. Output → dist/  (index.html, old/, v1/, … v5/).
 //
 // Each version lives on its own branch. We build them LOCALLY (where every version branch
 // already exists) and COMMIT the finished dist/ — Vercel then just SERVES dist/ as static
@@ -61,6 +62,7 @@ rmSync('dist', { recursive: true, force: true });
 mkdirSync('dist', { recursive: true });
 for (const v of VERSIONS) cpSync(`${STAGING}/${v}`, `dist/${v}`, { recursive: true });
 cpSync('hub/index.html', 'dist/index.html');
+cpSync('hub/old', 'dist/old', { recursive: true }); // "Old stuff" folder page (links to ../v1…v3)
 rmSync(STAGING, { recursive: true, force: true });
 
 console.log('\nHub built → dist/  — next: git add dist && commit && push (Vercel serves it as-is).');
