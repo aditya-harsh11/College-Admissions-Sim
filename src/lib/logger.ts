@@ -49,8 +49,9 @@ export function getSessionId(): string {
 
 // Deployed Google Apps Script web-app URL (ends in /exec). Paste yours here once deployed (see
 // google-apps-script.gs). Left blank → responses are kept in localStorage only, so nothing is lost.
-const SHEET_ENDPOINT =
-  'https://script.google.com/macros/s/AKfycbyIAKvEHSA6mj-VKBlrRCl1sJmXZ0GJ1jy8L9TGyvFBV4V6ILC7Ai6wXTAI725g9N3lzg/exec';
+// Intentionally BLANK on v6: only v4 saves to the Google Sheet for now (Randy). v6 keeps responses
+// in localStorage only — paste an endpoint here to re-enable Sheet saving.
+const SHEET_ENDPOINT = '';
 
 /**
  * Flush the response to the Google Sheet: a WIDE row (`meta.wide`, one per participant) plus the
