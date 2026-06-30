@@ -5,10 +5,10 @@ import { Legend } from '../components/Legend';
 import { StatStrip } from '../components/StatStrip';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
 import { useRubric } from '../hooks/useRubric';
-import { logEvent, saveResponse } from '../lib/logger';
+import { getTrialSummary, logEvent, saveResponse } from '../lib/logger';
 import { generateApplicantPool } from '../sim/generator';
 import { runSim } from '../sim/scoring';
-import type { SimConfig, SimResult, Weights } from '../sim/types';
+import type { Criterion, SimConfig, SimResult, Weights } from '../sim/types';
 
 type Step = 'welcome' | 'consent' | 'info' | 'pre' | 'learn' | 'post' | 'demographics' | 'done';
 const ORDER: Step[] = [
@@ -87,7 +87,8 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   // Race is the participant's own group — kept early because it's central to the hypothesis. The
   // rest of the demographics are collected at the END so they don't prime the rubric task.
   const [race, setRace] = useState('');
-  const [dob, setDob] = useState('');
+  // Randy 06-29: ask for AGE directly — date-of-birth "doesn't feel right" and invites fake entries.
+  const [age, setAge] = useState('');
   const [gender, setGender] = useState('');
   const [hispanic, setHispanic] = useState('');
   const [income, setIncome] = useState('');
@@ -102,15 +103,38 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   const [gateStyle, setGateStyle] = useState<'disabled' | 'popup'>('disabled');
 
   // Randomize the dream-school order once per session so Harvard (or any one school) at the top
-  // doesn't anchor people's aspirations. Shuffled in a ref-stable memo, not during render.
-  const schoolOrder = useMemo(() => {
+  // doesn't anchor people's aspirations. A lazy state initializer shuffles exactly once.
+  const [schoolOrder] = useState(() => {
     const arr = [...config.schools];
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
-  }, [config.schools]);
+  });
+
+  // Randomize the criteria order once per session to fight position-anchoring (e.g. "life experience"
+  // always last). Shuffled only WITHIN each cluster, so the objective pair and the subjective four
+  // each stay grouped, with the objective cluster kept first. (Randy 06-29.) A lazy state initializer
+  // runs the shuffle exactly once; the same order is reused for the pre and post rubric so it stays
+  // stable within a participant.
+  const [orderedCriteria] = useState<Criterion[]>(() => {
+    const shuffle = (arr: Criterion[]) => {
+      const a = [...arr];
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    };
+    const objective = config.criteria.filter((c) => c.cluster === 'objective');
+    const subjective = config.criteria.filter((c) => c.cluster !== 'objective');
+    return [...shuffle(objective), ...shuffle(subjective)];
+  });
+
+  // True once the participant has reached the revise step, so partial saves include their post
+  // rubric even if they abandon mid-revise (before that, post.weights is just the seeded copy).
+  const [postSeeded, setPostSeeded] = useState(false);
 
   const stepEnteredAt = useRef(0);
 
@@ -125,8 +149,56 @@ export function StudyFlow({ config }: { config: SimConfig }) {
   useEffect(() => {
     stepEnteredAt.current = performance.now();
     logEvent('session_start');
+    // Record the criteria order this participant saw, so the anchoring randomization is analyzable.
+    logEvent('criteria_order', { order: orderedCriteria.map((c) => c.key).join(',') });
     logEvent('page_enter', { step: 'welcome' });
-  }, []);
+  }, [orderedCriteria]);
+
+  /**
+   * The WIDE row for this participant — built fresh from current state so each save is cumulative.
+   * Keyed by name (the Apps Script MERGES it into the participant's single row), so calling this on
+   * every page keeps partial data without creating duplicate rows. Columns are defined entirely here.
+   */
+  const buildWide = (complete = false): Record<string, string | number | null> => {
+    const schoolLabel = config.schools.find((s) => s.id === school)?.label ?? school;
+    const wide: Record<string, string | number | null> = {
+      name,
+      furthestStep: step,
+      complete: complete ? 1 : 0,
+      school: schoolLabel,
+      race,
+      age: age ? Number(age) : null,
+      gender,
+      hispanic,
+      income,
+      criteriaOrder: orderedCriteria.map((c) => c.key).join(','),
+    };
+    for (const c of config.criteria) {
+      if (preCaptured) {
+        const before = preCaptured[c.key] ?? 0;
+        wide[`pre_${c.key}`] = before;
+        if (postSeeded) {
+          const after = post.weights[c.key] ?? 0;
+          wide[`post_${c.key}`] = after;
+          wide[`delta_${c.key}`] = after - before;
+        }
+      }
+    }
+    // Per-trial path stats (min/max/move-count per slider per phase). The settled value is the
+    // `pre_`/`post_` columns above; these add the path/spread/revision signal. (Randy 06-29.)
+    Object.assign(wide, getTrialSummary());
+    return wide;
+  };
+
+  // Save per page (Randy 06-29): once we have a name to key on, persist a snapshot on every step
+  // change so abandoned runs still leave partial data. Only new events are sent each time. The final
+  // completed save is fired explicitly from finishStudy, so 'done' is skipped here.
+  useEffect(() => {
+    if (!name.trim() || step === 'welcome' || step === 'consent' || step === 'done') return;
+    void saveResponse({ name, wide: buildWide() });
+    // Intentionally keyed on `step` only — the effect closure already reads the latest state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
 
   const go = (next: Step) => {
     const now = performance.now();
@@ -151,6 +223,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
     // Reveal-then-revise: seed the post rubric from their pre answer so they REVISE (nudge from
     // where they were) rather than rebuild from scratch. (Randy, 06-24.)
     if (preCaptured) post.setAll(preCaptured);
+    setPostSeeded(true);
     go('post');
   };
 
@@ -165,41 +238,10 @@ export function StudyFlow({ config }: { config: SimConfig }) {
     go('demographics');
   };
 
-  /** Compute whole-years age from a YYYY-MM-DD date of birth (Randy: collect DOB, derive age). */
-  const ageFromDob = (iso: string): number | null => {
-    if (!iso) return null;
-    const [y, m, d] = iso.split('-').map(Number);
-    if (!y || !m || !d) return null;
-    const now = new Date();
-    let age = now.getFullYear() - y;
-    if (now.getMonth() + 1 < m || (now.getMonth() + 1 === m && now.getDate() < d)) age -= 1;
-    return age;
-  };
-
   const finishStudy = () => {
-    const schoolLabel = config.schools.find((s) => s.id === school)?.label ?? school;
-    const postWeights = post.weights;
-    // The WIDE row — one row per participant, keyed by name. Add/rename/remove columns HERE; the
-    // Sheet writes whatever keys we send, so no Apps Script change is needed for column tweaks.
-    const wide: Record<string, string | number | null> = {
-      name,
-      school: schoolLabel,
-      race,
-      dob,
-      age: ageFromDob(dob),
-      gender,
-      hispanic,
-      income,
-    };
-    for (const c of config.criteria) {
-      const before = preCaptured?.[c.key] ?? 0;
-      const after = postWeights[c.key] ?? 0;
-      wide[`pre_${c.key}`] = before;
-      wide[`post_${c.key}`] = after;
-      wide[`delta_${c.key}`] = after - before;
-    }
-    void saveResponse({ name, wide });
     logEvent('study_complete', {});
+    // Final, completed save — stamps the row as a finished run (the per-page effect skips 'done').
+    void saveResponse({ name, wide: buildWide(true), complete: true });
     go('done');
   };
 
@@ -373,7 +415,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
               Spend your 100 points. You won’t see the result yet. Set the rubric you think is fair.
             </p>
             <AllocationPanel
-              criteria={config.criteria}
+              criteria={orderedCriteria}
               weights={pre.weights}
               mode={pre.mode}
               locked={false}
@@ -419,7 +461,7 @@ export function StudyFlow({ config }: { config: SimConfig }) {
             </p>
             <div className={config.ui.showPostPie ? 'study__splitgrid' : ''}>
               <AllocationPanel
-                criteria={config.criteria}
+                criteria={orderedCriteria}
                 weights={post.weights}
                 mode={post.mode}
                 locked={false}
@@ -474,14 +516,19 @@ export function StudyFlow({ config }: { config: SimConfig }) {
             </p>
 
             <label className="study__field">
-              <span className="study__fieldlabel">Date of birth</span>
+              <span className="study__fieldlabel">Age</span>
               <input
                 className="study__input"
-                type="date"
-                value={dob}
+                type="number"
+                min={18}
+                max={120}
+                step={1}
+                inputMode="numeric"
+                value={age}
+                placeholder="Your age in years"
                 onChange={(e) => {
-                  setDob(e.target.value);
-                  logEvent('field_change', { field: 'dob', value: e.target.value });
+                  setAge(e.target.value);
+                  logEvent('field_change', { field: 'age', value: e.target.value });
                 }}
               />
             </label>

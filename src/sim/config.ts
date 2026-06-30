@@ -79,41 +79,49 @@ export const DEFAULT_CONFIG: SimConfig = {
   ],
 
   criteria: [
+    // `cluster` groups the criteria for the study's anchoring-control: the order is randomized
+    // only WITHIN each cluster, so the objective pair and the subjective four each stay grouped.
     {
       key: 'grades',
       label: 'Grades & Coursework',
       blurb: 'GPA & rigor of classes',
       defaultWeight: 17,
+      cluster: 'objective',
     },
     {
       key: 'testScore',
       label: 'Test Scores',
       blurb: 'SAT / ACT performance',
       defaultWeight: 17,
+      cluster: 'objective',
     },
     {
       key: 'communityService',
       label: 'Community Service',
       blurb: 'Volunteering & civic work',
       defaultWeight: 17,
+      cluster: 'subjective',
     },
     {
       key: 'extracurriculars',
       label: 'Extracurriculars',
       blurb: 'Clubs, sports, the arts',
       defaultWeight: 17,
+      cluster: 'subjective',
     },
     {
       key: 'leadership',
       label: 'Leadership & Character',
       blurb: 'Initiative and integrity',
       defaultWeight: 16,
+      cluster: 'subjective',
     },
     {
       key: 'lifeExperience',
       label: 'Life Experience',
       blurb: 'Background & adversity overcome',
       defaultWeight: 16,
+      cluster: 'subjective',
     },
   ],
 

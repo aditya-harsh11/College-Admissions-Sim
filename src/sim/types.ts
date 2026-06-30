@@ -16,6 +16,12 @@ export interface Criterion {
   blurb: string;
   /** Starting allocation, in points out of 100. */
   defaultWeight: number;
+  /**
+   * Which cluster this criterion belongs to. The study version randomizes the order in which
+   * criteria are shown to fight position-anchoring, but only WITHIN a cluster — the "objective"
+   * group (grades, tests) and "subjective" group stay grouped. (Randy 06-29.)
+   */
+  cluster?: 'objective' | 'subjective';
 }
 
 /**

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { rebalance } from '../lib/rebalance';
-import { logEvent } from '../lib/logger';
+import { logEvent, logEventThrottled, trackTrial } from '../lib/logger';
 import type { AttributeKey, SimConfig, Weights } from '../sim/types';
 
 export type SliderMode = 'auto' | 'manual';
@@ -63,7 +63,12 @@ export function useRubric(config: SimConfig, phase = 'rubric') {
           ? rebalance(weights, key, v)
           : { ...weights, [key]: v };
     }
-    logEvent('weight_change', {
+    // Fold EVERY move into the per-trial min/max/count BEFORE throttling, so a transient peak that
+    // the 100ms sampler skips is still captured for analysis.
+    trackTrial(phase, key, next[key]);
+    // Sample to ~one event per 100ms per phase (with a trailing flush) so a drag doesn't emit
+    // hundreds of rows; the resting value is always kept. (Randy 06-29.)
+    logEventThrottled(`weight_change:${phase}`, 'weight_change', {
       phase,
       criterion: key,
       fromPts: weights[key],
