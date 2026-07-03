@@ -63,6 +63,7 @@ mkdirSync('dist', { recursive: true });
 for (const v of VERSIONS) cpSync(`${STAGING}/${v}`, `dist/${v}`, { recursive: true });
 cpSync('hub/index.html', 'dist/index.html');
 cpSync('hub/old', 'dist/old', { recursive: true }); // "Old stuff" folder page (links to ../v1…v3)
+cpSync('hub/v6menu', 'dist/v6menu', { recursive: true }); // v6 chooser (original/updated + datasets → ../v6/?…)
 rmSync(STAGING, { recursive: true, force: true });
 
 console.log('\nHub built → dist/  — next: git add dist && commit && push (Vercel serves it as-is).');
