@@ -65,6 +65,12 @@ export interface SimConfig {
     flow: 'single' | 'study' | 'shift';
     /** Study only: show the demographic pie during the POST rubric (reveal-then-revise) vs. blind. */
     showPostPie: boolean;
+    /**
+     * v6 shift study: which real dataset the demographic visual shows — `uw` ("v6 UW", default),
+     * `national` ("v6 overall (college)"), or `fake` (dummy/exaggerated for testing). A `?data=`
+     * URL param overrides this so one build can serve every variant.
+     */
+    shiftDataset?: 'uw' | 'national' | 'fake';
   };
   /** Real-ish schools for the "dream school" step + the v5 selectivity mechanic. */
   schools: SchoolProfile[];

@@ -1280,11 +1280,7 @@ input[type='range']::-moz-range-thumb {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 14px 30px -26px rgba(40, 30, 15, 0.5);
 }
 .shift__head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 .shift__title {
   font-family: var(--serif);
@@ -1294,12 +1290,20 @@ input[type='range']::-moz-range-thumb {
   letter-spacing: -0.01em;
   margin-top: 2px;
 }
-.shift__headline {
+/* Headline stat: the shifting % kept large and prominent (07-03 item 4). */
+.shift__stat {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.shift__statmeta {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  text-align: right;
-  flex: 0 0 auto;
+  gap: 3px;
+}
+.shift__statmeta .delta {
+  font-size: 0.82rem;
 }
 .shift__big {
   font-family: var(--serif);
@@ -1319,20 +1323,32 @@ input[type='range']::-moz-range-thumb {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-top: 4px;
 }
-.shift__headline .delta {
-  font-size: 0.78rem;
-  margin-top: 6px;
+
+/* The year, moved DOWN under the bar and made big so it can't be skimmed past (07-03 item 4).
+   Shown in both conditions so the two stay visually consistent (item 6). */
+.shift__yearband {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 16px 0 4px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
 }
-.shift__bigyear {
+.shift__yearbig {
   font-family: var(--serif);
   font-weight: 600;
-  font-size: clamp(2.2rem, 6vw, 3.2rem);
+  font-size: clamp(2rem, 6vw, 3rem);
   line-height: 0.9;
   font-variant-numeric: tabular-nums;
   color: var(--accent);
-  flex: 0 0 auto;
+}
+.shift__yearcap {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 /* Stacked composition bar — segments ease to their new width as the year changes. */
@@ -1408,24 +1424,34 @@ input[type='range']::-moz-range-thumb {
   background: var(--panel);
 }
 
-/* Legend — one row per group with its current share and change since the first year. */
+/* Ranked legend — rows are absolutely positioned and translated to their current rank, so they
+   physically GLIDE up and down as groups rise and fall across the years (07-03 item 5). The <ul>
+   height is set inline (n rows × row height) to reserve the space. */
 .shift__legend {
   list-style: none;
   padding: 0;
-  margin: 16px 0 0;
-  display: grid;
-  gap: 1px;
+  margin: 18px 0 0;
+  position: relative;
 }
 .shift__legrow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 40px;
   display: grid;
-  grid-template-columns: 14px 1fr auto 5.5ch;
+  grid-template-columns: 1.4ch 14px 1fr auto 5.5ch;
   align-items: center;
   gap: 10px;
-  padding: 7px 0;
+  padding: 0 2px;
   border-bottom: 1px solid var(--line-soft);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.1, 1);
+  will-change: transform;
 }
-.shift__legrow:last-child {
-  border-bottom: none;
+.shift__legtrend {
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
 }
 .shift__swatch {
   width: 12px;
@@ -1442,12 +1468,33 @@ input[type='range']::-moz-range-thumb {
   font-size: 0.95rem;
   font-variant-numeric: tabular-nums;
 }
+/* One-line, data-driven takeaway shown once every year has been viewed (07-03 item 5). */
+.shift__summary {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: rgba(178, 58, 31, 0.06);
+  border: 1px solid rgba(178, 58, 31, 0.16);
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--ink);
+  animation: rise 0.4s both;
+}
 .shift__source {
   margin-top: 14px;
   font-family: var(--serif);
   font-style: italic;
   font-size: 0.78rem;
   color: var(--muted);
+}
+
+/* Year stepper — a range scrubber + clickable year chips (07-03 item 3). */
+.stepper {
+  margin: 6px 0 2px;
+}
+.stepper__scrub {
+  margin-bottom: 0;
 }
 
 /* Control condition: a single process snapshot that swaps as you scrub the years. */
@@ -1474,4 +1521,143 @@ input[type='range']::-moz-range-thumb {
   font-size: 1.02rem;
   color: var(--ink-soft);
   max-width: 52ch;
+}
+
+/* ─────────────  v6 — the "news article" reveal wrapper (07-03 item 2)  ───────────── */
+/* Left-justified long-form article; fixed measure so the page doesn't shift between steps
+   (07-03 item 6). The interactive widget is embedded mid-article as a figure. */
+.study__card--article {
+  max-width: 760px;
+  margin: 0 auto;
+  text-align: left;
+}
+.article__kicker {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.article__headline {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(1.9rem, 4.4vw, 2.9rem);
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+.article__dek {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(1.05rem, 2.2vw, 1.28rem);
+  line-height: 1.4;
+  color: var(--ink-soft);
+  max-width: 60ch;
+  margin-bottom: 16px;
+}
+.article__byline {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 22px;
+}
+.article__body > p {
+  font-size: 1.06rem;
+  line-height: 1.62;
+  color: var(--ink);
+  max-width: 64ch;
+  margin-bottom: 18px;
+}
+/* Drop cap on the opening paragraph — a subtle editorial cue that this is a real article. */
+.article__body > p:first-of-type::first-letter {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 3.1em;
+  line-height: 0.72;
+  float: left;
+  margin: 6px 10px 0 0;
+  color: var(--accent);
+}
+.article__figure {
+  margin: 26px 0;
+}
+.article__figintro {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+/* The verbatim stimulus instruction, set apart as a pull-aside before the task. */
+.article__prompt {
+  margin-top: 8px;
+  padding: 16px 18px;
+  border-left: 3px solid var(--accent);
+  background: #fffdf8;
+  border-radius: 0 9px 9px 0;
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--ink);
+  max-width: 64ch;
+}
+
+/* ─────────────  "Original" v6 build (?build=original)  ─────────────
+   The pre-redesign v6 lives in src/study/v6original/ and renders inside a `.v6-original`
+   wrapper. The redesign repurposed a handful of `.shift__*` classes (headline → stat, grid
+   legend → animated ranked legend, etc.); these scoped rules restore the original look for
+   that build only, so Original and Updated coexist in one bundle without colliding. */
+.v6-original .shift__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.v6-original .shift__headline {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  flex: 0 0 auto;
+}
+.v6-original .shift__cap {
+  margin-top: 4px;
+}
+.v6-original .shift__headline .delta {
+  font-size: 0.78rem;
+  margin-top: 6px;
+}
+.v6-original .shift__bigyear {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(2.2rem, 6vw, 3.2rem);
+  line-height: 0.9;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+.v6-original .shift__legend {
+  position: static;
+  margin: 16px 0 0;
+  display: grid;
+  gap: 1px;
+}
+.v6-original .shift__legrow {
+  position: static;
+  height: auto;
+  grid-template-columns: 14px 1fr auto 5.5ch;
+  padding: 7px 0;
+  transition: none;
+}
+.v6-original .shift__legrow:last-child {
+  border-bottom: none;
 }

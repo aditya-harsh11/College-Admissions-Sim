@@ -42,6 +42,9 @@ export const DEFAULT_CONFIG: SimConfig = {
     flow: 'shift',
     // v4: reveal-then-revise — pie visible during the POST rubric. Flip false for a blind sibling.
     showPostPie: true,
+    // v6 shift visual dataset: 'uw' (v6 UW) | 'national' (v6 overall college) | 'fake' (dummy).
+    // Overridable at runtime with ?data=uw|national|fake.
+    shiftDataset: 'uw',
   },
 
   // Approximate, web-sourced school data (see Notes/Research.md). Tuned for relative CONTRAST

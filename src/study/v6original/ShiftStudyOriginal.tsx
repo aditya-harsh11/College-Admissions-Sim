@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { AllocationPanel } from '../components/AllocationPanel';
-import { useRubric } from '../hooks/useRubric';
-import { logEvent, saveResponse } from '../lib/logger';
-import type { SimConfig } from '../sim/types';
-import { DemographicShift } from './DemographicShift';
-import { ProcessTimeline } from './ProcessTimeline';
-import { ARTICLE, resolveDataset, STIMULUS, type Condition } from './demographics';
+import { AllocationPanel } from '../../components/AllocationPanel';
+import { useRubric } from '../../hooks/useRubric';
+import { logEvent, saveResponse } from '../../lib/logger';
+import type { SimConfig } from '../../sim/types';
+import { DemographicShiftOriginal } from './DemographicShiftOriginal';
+import { ProcessTimelineOriginal } from './ProcessTimelineOriginal';
+import { STIMULUS, type Condition } from './demographicsOriginal';
 
 type Step = 'welcome' | 'consent' | 'info' | 'preview' | 'learn' | 'rubric' | 'demographics' | 'done';
 const ORDER: Step[] = ['welcome', 'consent', 'info', 'preview', 'learn', 'rubric', 'demographics', 'done'];
@@ -14,14 +14,11 @@ const STEP_LABELS: Record<Step, string> = {
   consent: 'Consent',
   info: 'About you',
   preview: 'Overview',
-  learn: 'The article',
+  learn: 'Background',
   rubric: 'Your rubric',
   demographics: 'A few questions',
   done: 'Done',
 };
-
-/** Short code identifying this app in the shared response sheet (07-03: a `study` column). */
-const STUDY_CODE = 'ca-v6';
 
 const RACE_OPTIONS = [
   'White',
@@ -44,26 +41,12 @@ const INCOME_OPTIONS = [
 ];
 
 /**
- * A letter-prefixed participant ID (07-03 item 8), e.g. "CA-7F3K9" — NOT 101/102. The `CA-`
- * prefix makes the app obvious at a glance and the base-36 body forces a string type in R (no
- * `as.factor` gymnastics). Assigned once per session.
- */
-function makeParticipantId(): string {
-  return `CA-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-}
-
-/**
- * v6 — "Shifting Demographics" study. A between-subjects design: each participant is randomly
+ * v6 - "Shifting Demographics" study. A between-subjects design: each participant is randomly
  * assigned to read about the changing DEMOGRAPHICS of the student body (experimental) or the
  * changing admissions PROCESS (control), then allocates 100 points across six factors. There is
- * no pre/post revise — the real-world change is the manipulation, shown before the single rubric.
- *
- * The reveal is wrapped in a long-form "news article" (07-03) with the interactive year-by-year
- * widget embedded mid-article. Which real dataset the widget shows is chosen by ?data=uw|national|
- * fake (default UW). Progress is saved on every page so abandoned runs are still captured, and an
- * entrance/exit pair lets us compute completion rate.
+ * no pre/post revise - the real-world change is the manipulation, shown before the single rubric.
  */
-export function ShiftStudy({ config }: { config: SimConfig }) {
+export function ShiftStudyOriginal({ config }: { config: SimConfig }) {
   const [step, setStep] = useState<Step>('welcome');
   // Random condition, fixed for the session. A `?cond=shift|process` URL override lets us (and
   // Randy) preview a specific condition without reloading for the coin flip.
@@ -72,13 +55,6 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
     if (forced === 'shift' || forced === 'process') return forced;
     return Math.random() < 0.5 ? 'shift' : 'process';
   });
-  // Which real dataset the shift visual shows (07-03 item 7: "v6 UW" vs "v6 overall (college)"
-  // vs a dummy set). Fixed per session; picked by ?data= or the config default.
-  const [dataset] = useState(() =>
-    resolveDataset(new URLSearchParams(window.location.search).get('data') ?? config.ui.shiftDataset),
-  );
-  const [participantId] = useState(makeParticipantId);
-
   const [name, setName] = useState('');
   const [race, setRace] = useState('');
   const [age, setAge] = useState('');
@@ -92,43 +68,11 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
   const rubric = useRubric(config, 'rubric');
   const stepEnteredAt = useRef(0);
 
-  // Build the cumulative WIDE row for this participant — the same shape whether we're saving mid-run
-  // (per-page) or at the end. Keyed by participantId so partial rows can be upserted/identified.
-  const buildWide = (current: Step): Record<string, string | number | null> => {
-    const wide: Record<string, string | number | null> = {
-      participantId,
-      study: STUDY_CODE,
-      condition,
-      dataset: dataset.id,
-      lastStep: current,
-      completed: current === 'done' ? 1 : 0,
-      name,
-      race,
-      age: age ? Number(age) : null,
-      gender,
-      hispanic,
-      income,
-    };
-    for (const c of config.criteria) wide[`factor_${c.key}`] = rubric.weights[c.key] ?? 0;
-    return wide;
-  };
-
   useEffect(() => {
     stepEnteredAt.current = performance.now();
-    logEvent('session_start', { study: STUDY_CODE, participantId, condition, dataset: dataset.id });
-    // Entrance log — paired with the exit log at 'done' to compute completion / abandonment.
-    logEvent('entrance', { study: STUDY_CODE, participantId, condition, dataset: dataset.id });
+    logEvent('session_start', { study: 'v6-shift', condition });
     logEvent('page_enter', { step: 'welcome' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Per-page saving (07-03 item 9): persist a cumulative row on every step change so an abandoned
-  // run is still captured (v6's SHEET_ENDPOINT is blank → this lands in localStorage for now; add
-  // an endpoint in logger.ts to push these to the Sheet like v4 does).
-  useEffect(() => {
-    void saveResponse({ name: participantId, wide: buildWide(step) });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+  }, [condition]);
 
   const go = (next: Step) => {
     const now = performance.now();
@@ -149,18 +93,26 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
   };
 
   const finishStudy = () => {
-    logEvent('exit', { study: STUDY_CODE, participantId, condition, completed: 1 });
+    const wide: Record<string, string | number | null> = {
+      name,
+      condition,
+      race,
+      age: age ? Number(age) : null,
+      gender,
+      hispanic,
+      income,
+    };
+    for (const c of config.criteria) wide[`factor_${c.key}`] = rubric.weights[c.key] ?? 0;
+    void saveResponse({ name, wide });
     logEvent('study_complete', { condition });
-    // Final save carries the completed flag; the per-page effect will also fire on the 'done' step.
-    void saveResponse({ name: participantId, wide: buildWide('done') });
     go('done');
   };
 
   const stepIndex = ORDER.indexOf(step);
-  const article = ARTICLE[condition];
+  const framing = condition === 'shift' ? STIMULUS.shift : STIMULUS.process;
 
   return (
-    <div className="study">
+    <div className="study v6-original">
       <header className="study__bar">
         <span className="study__brand">College Admissions</span>
         <ol className="study__progress" aria-label="Progress">
@@ -290,39 +242,26 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
         )}
 
         {step === 'learn' && (
-          <section className="study__card study__card--article">
-            <article className="article">
-              <p className="article__kicker">
-                {article.outlet} · {article.kicker}
-              </p>
-              <h1 className="article__headline">{article.headline}</h1>
-              <p className="article__dek">{article.dek}</p>
-              <p className="article__byline">{article.byline}</p>
-
-              <div className="article__body">
-                {article.lead.map((p, i) => (
-                  <p key={`lead-${i}`}>{p}</p>
+          <section className="study__card study__card--split">
+            <p className="panel__kicker">Some background</p>
+            <h2 className="study__h2">{framing.title}</h2>
+            <div className="study__learngrid">
+              <div className="study__learnprose">
+                {framing.paras.map((p, i) => (
+                  <p className="study__lead" key={i}>
+                    {p}
+                  </p>
                 ))}
-
-                {/* The interactive reveal, embedded mid-article as a figure. */}
-                <figure className="article__figure">
-                  <p className="article__figintro">{article.widgetIntro}</p>
-                  {condition === 'shift' ? (
-                    <DemographicShift dataset={dataset} onExplored={() => setExplored(true)} />
-                  ) : (
-                    <ProcessTimeline dataset={dataset} onExplored={() => setExplored(true)} />
-                  )}
-                </figure>
-
-                {article.body.map((p, i) => (
-                  <p key={`body-${i}`}>{p}</p>
-                ))}
-
-                {/* Verbatim stimulus instruction (docx page 3) — the formal prompt into the task. */}
-                <aside className="article__prompt">{STIMULUS[condition].prompt}</aside>
+                <p className="study__note">{framing.prompt}</p>
               </div>
-            </article>
-
+              <div className="study__learnviz">
+                {condition === 'shift' ? (
+                  <DemographicShiftOriginal onExplored={() => setExplored(true)} />
+                ) : (
+                  <ProcessTimelineOriginal onExplored={() => setExplored(true)} />
+                )}
+              </div>
+            </div>
             <div className="study__learnfoot">
               <button className="btn btn--primary" disabled={!explored} onClick={() => go('rubric')}>
                 {explored ? 'Continue' : 'Move through every year to continue'}
