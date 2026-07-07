@@ -15,6 +15,9 @@ dist-ssr
 # Local SQLite responses DB (v4) — runtime data, never commit
 data/
 
+# Source material from the lab (demographics data, stimulus drafts, docx) — local only, never shipped
+documents/
+
 # dist/ is intentionally COMMITTED: the hub is built locally (where every version branch
 # exists) and Vercel just serves the finished files — no branch-fetching during deploy.
 
