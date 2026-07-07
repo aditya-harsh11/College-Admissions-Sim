@@ -246,10 +246,12 @@ export const STIMULUS = {
 } as const;
 
 // ── The long-form "news article" wrapper (07-03: the reveal Randy cares about most) ──
-// Atlantic-style feature, from a FICTIONAL outlet (no real publication impersonated).
-// `lead` renders above the embedded interactive; `body` renders below it. Deliberately
-// neutral — it sets the scene without steering the participant toward a conclusion, and
-// (per 07-03) it does NOT open on a test-optional line.
+// Copy is VERBATIM from Ben's stimulus draft — "MADLIBs Method 2" in
+// `documents/Stimuli Article Drafts (Ben).pdf` (p.5) — expanded per condition, authored by the
+// placeholder "Alex Williams" from Ben's unisex/common-surname pool. No fabricated outlet (Ben's
+// draft has none). `dek` is the opening standfirst; `lead` renders above the embedded interactive,
+// `widgetIntro` right before it (Ben's "…let's take a look at the numbers" lead-in), `body` after.
+// Only change from Ben's text: the end year is 2025 (he wrote 2026) to match the widget/datasets.
 export interface Article {
   outlet: string;
   kicker: string;
@@ -262,40 +264,41 @@ export interface Article {
 }
 
 export const ARTICLE: Record<Condition, Article> = {
+  // Verbatim from Ben's "MADLIBs Method 2" (Stimuli Article Drafts.pdf, p.5), expanded for the
+  // demographics condition. Only the end year is 2025 (Ben wrote 2026) to match the widget/datasets.
   shift: {
-    outlet: 'The Commons Review',
-    kicker: 'Higher Education',
-    headline: 'The Quietly Remade American Campus',
-    byline: 'By Eleanor Hastings',
-    dek: 'Over a single generation, the makeup of who sits in a university lecture hall has changed more than most alumni would guess. The records tell the story plainly.',
+    outlet: '',
+    kicker: '',
+    headline: 'The Shifting of College Demographics Across the United States',
+    byline: 'By Alex Williams',
+    dek: 'College demographics are a far-cry from what they looked like only a generation ago. Today’s university classrooms are completely different from those back in 1999.',
     lead: [
-      'Walk across almost any large American campus today and it looks, in the aggregate, like a different place than it did at the turn of the millennium. The change did not arrive with a single policy or a single headline. It accumulated, one entering class at a time, until the freshmen filing into orientation no longer resembled the class that came before them — or the alumni who like to imagine the school unchanged.',
-      'Universities keep meticulous records of who enrolls, and those records are public. They are the least dramatic and most convincing way to see what actually happened. Rather than argue about it, it is worth simply watching the numbers move.',
+      'Take a look at college demographics at major United States universities today and they will look very different from what they looked like at the turn of the century. While these changes didn’t occur overnight, with one policy decision or a single headline, now it has become undeniable. One application cycle after the next, university demographics changed little by little until the college classrooms of 2025 no longer resembled those of 1999.',
     ],
     widgetIntro:
-      'Below is one flagship university’s own count of its undergraduates, year by year. Step through time and watch the composition change.',
+      'While most may have not noticed any shift year-to-year, taking a step back paints a better picture of the changes. Luckily, universities take meticulous—and public—records of the demographic make-up of their classes. Rather than to speculate about these changes, let’s take a look at the numbers.',
     body: [
-      'What stands out is not any single figure but the slope of the lines: the share that once dominated the student body recedes steadily, while groups that were rounding errors a generation ago become a real presence. None of it is sudden. All of it is large.',
-      'Demographers who study higher education tend to attribute the shift to a tangle of causes — a more diverse college-age population, wider geographic recruiting, changing immigration patterns, and evolving choices by families about where to apply. The precise mix is debated. The direction is not.',
-      'Which raises the question this study is actually about. As the population a university serves changes, so too can the conversation about what a university should be looking for in the first place. On the next screen, we will ask you exactly that.',
+      'What stands out is not any specific number but the trajectory of those numbers. Year after year, shares that once dominated the student body slowly recede, as shares that were—at one point—rounding errors become significant portions of the student body.',
+      'Analysts who study college demographics attribute this change to a number of reasons. Shifts in technology, applicant pools, and shifting family priorities, to name a few. The precise reason for these changes are contested, but the changes themselves are not.',
+      'Which brings us to the question that this study is about. As the demographics of universities changes, so too can the conversations about what universities should look for in their applicants. On the next screen we will ask you a few questions about exactly that.',
     ],
   },
+  // Verbatim from Ben's "MADLIBs Method 2", expanded for the admissions-process (control) condition.
   process: {
-    outlet: 'The Commons Review',
-    kicker: 'Higher Education',
-    headline: 'How Getting In Got Complicated',
-    byline: 'By Eleanor Hastings',
-    dek: 'Over a single generation, the machinery of applying to college was rebuilt almost completely. The paperwork of 1999 would be unrecognizable to a student today.',
+    outlet: '',
+    kicker: '',
+    headline: 'The Shifting of College Admissions Across the United States',
+    byline: 'By Alex Williams',
+    dek: 'Admissions processes are a far-cry from what they looked like only a generation ago. Today’s college applications are completely different from those back in 1999.',
     lead: [
-      'A generation ago, applying to college was a physical act. You typed a form, mailed a transcript, asked a teacher for a letter, and waited by the mailbox. Most students applied to a few schools, usually close to home, and an admissions officer read each folder by hand.',
-      'That entire process has been quietly rebuilt. The steps a student takes today — and the steps an admissions office takes in return — bear little resemblance to the ones their parents took. Rather than argue about it, it is worth simply watching the process change.',
+      'Take a look at college applications at major United States universities today and they will look very different from what they looked like at the turn of the century. While these changes didn’t occur overnight, with one policy decision or a single headline, now it has become undeniable. One application cycle after the next, university applications changed little by little until the college admissions standards of 2025 no longer resembled those of 1999.',
     ],
     widgetIntro:
-      'Below is a short timeline of how the mechanics of applying changed, decade by decade. Step through time and watch it evolve.',
+      'While most may have not noticed any shift year-to-year, taking a step back paints a better picture of the changes. Luckily, universities take meticulous—and public—records of their admissions processes. Rather than to speculate about these changes, let’s take a look at the history.',
     body: [
-      'What stands out is not any single change but the accumulation: each convenience raised the volume, and each rise in volume changed how applications had to be handled. The system that reads your application today was built to cope with numbers the old one never imagined.',
-      'Analysts who study admissions tend to attribute the shift to a tangle of causes — new technology, wider access, competition between schools, and evolving choices by families about where and how to apply. The precise mix is debated. The direction is not.',
-      'Which raises the question this study is actually about. As the process of applying changes, so too can the conversation about what a university should be looking for in the first place. On the next screen, we will ask you exactly that.',
+      'What stands out is not any specific change but the trajectory of those changes. Year after year, change after change accumulated to accommodate greater numbers of students applying to colleges, until admissions processes stopped resembling those at the turn of the century.',
+      'Analysts who study college admissions attribute this change to a number of reasons. Shifts in technology, applicant pools, and shifting family priorities, to name a few. The precise reason for these changes are contested, but the changes themselves are not.',
+      'Which brings us to the question that this study is about. As the process of applying changes, so too can the conversations about what universities should look for in their applicants. On the next screen we will ask you a few questions about exactly that.',
     ],
   },
 };
