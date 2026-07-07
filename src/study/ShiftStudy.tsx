@@ -6,6 +6,7 @@ import type { SimConfig } from '../sim/types';
 import { DemographicShift } from './DemographicShift';
 import { ProcessTimeline } from './ProcessTimeline';
 import { ARTICLE, resolveDataset, STIMULUS, type Condition } from './demographics';
+import { clearSession, loadSession, saveSession } from './session';
 
 type Step = 'welcome' | 'consent' | 'info' | 'preview' | 'learn' | 'rubric' | 'demographics' | 'done';
 const ORDER: Step[] = ['welcome', 'consent', 'info', 'preview', 'learn', 'rubric', 'demographics', 'done'];
@@ -64,69 +65,152 @@ function makeParticipantId(): string {
  * entrance/exit pair lets us compute completion rate.
  */
 export function ShiftStudy({ config }: { config: SimConfig }) {
-  const [step, setStep] = useState<Step>('welcome');
+  // Boot state, computed once: a `?cond=` preview override + any in-progress session to resume from.
+  // We resume ONLY once a run has progressed past the intro pages, so a mid-study refresh never
+  // restarts (the "cookies" requirement) while a fresh visit at the welcome screen still re-rolls the
+  // random condition instead of being pinned to a stale one. `?data=` selects the dataset variant and
+  // is NOT a preview — real runs use it, so it must still persist. Forcing a condition (`?cond=`) is a
+  // deliberate researcher preview → never resume, never save (so it can't touch a real session).
+  const [boot] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const forcedCond = params.get('cond');
+    const forcedData = params.get('data');
+    const saved = loadSession();
+    const resumable =
+      !forcedCond &&
+      !!saved &&
+      saved.step !== 'welcome' &&
+      saved.step !== 'consent' &&
+      saved.step !== 'done';
+    return { forcedCond, forcedData, persisted: resumable ? saved : null };
+  });
+
+  const [step, setStep] = useState<Step>(() => (boot.persisted?.step as Step) ?? 'welcome');
   // Random condition, fixed for the session. A `?cond=shift|process` URL override lets us (and
-  // Randy) preview a specific condition without reloading for the coin flip.
+  // Randy) preview a specific condition without reloading; a resumed session keeps its condition.
   const [condition] = useState<Condition>(() => {
-    const forced = new URLSearchParams(window.location.search).get('cond');
-    if (forced === 'shift' || forced === 'process') return forced;
-    return Math.random() < 0.5 ? 'shift' : 'process';
+    if (boot.forcedCond === 'shift' || boot.forcedCond === 'process') return boot.forcedCond;
+    return boot.persisted?.condition ?? (Math.random() < 0.5 ? 'shift' : 'process');
   });
   // Which real dataset the shift visual shows (07-03 item 7: "v6 UW" vs "v6 overall (college)"
-  // vs a dummy set). Fixed per session; picked by ?data= or the config default.
+  // vs a dummy set). Fixed per session; picked by ?data=, a resumed session, or the config default.
   const [dataset] = useState(() =>
-    resolveDataset(new URLSearchParams(window.location.search).get('data') ?? config.ui.shiftDataset),
+    resolveDataset(boot.forcedData ?? boot.persisted?.dataset ?? config.ui.shiftDataset),
   );
-  const [participantId] = useState(makeParticipantId);
+  const [participantId] = useState(() => boot.persisted?.participantId ?? makeParticipantId());
 
-  const [name, setName] = useState('');
-  const [race, setRace] = useState('');
-  const [age, setAge] = useState('');
-  const [gender, setGender] = useState('');
-  const [hispanic, setHispanic] = useState('');
-  const [income, setIncome] = useState('');
-  const [consented, setConsented] = useState(false);
-  const [explored, setExplored] = useState(false);
+  const [name, setName] = useState(() => boot.persisted?.name ?? '');
+  const [race, setRace] = useState(() => boot.persisted?.race ?? '');
+  const [age, setAge] = useState(() => boot.persisted?.age ?? '');
+  const [gender, setGender] = useState(() => boot.persisted?.gender ?? '');
+  const [hispanic, setHispanic] = useState(() => boot.persisted?.hispanic ?? '');
+  const [income, setIncome] = useState(() => boot.persisted?.income ?? '');
+  const [consented, setConsented] = useState(() => boot.persisted?.consented ?? false);
+  const [explored, setExplored] = useState(() => boot.persisted?.explored ?? false);
   const [rubricError, setRubricError] = useState<number | null>(null);
+
+  // Demo-only presentation toggles (top-right) so the lab can compare shift-visual variants live —
+  // NOT participant data, so they're deliberately not persisted in the session. `lockMode` = Ben's
+  // scroll-to-advance lock vs the click/scrub version; `chartMode` = pie vs the stacked bar.
+  const [lockMode, setLockMode] = useState(false);
+  const [chartMode, setChartMode] = useState<'bar' | 'pie'>('bar');
 
   const rubric = useRubric(config, 'rubric');
   const stepEnteredAt = useRef(0);
 
-  // Build the cumulative WIDE row for this participant — the same shape whether we're saving mid-run
-  // (per-page) or at the end. Keyed by participantId so partial rows can be upserted/identified.
+  // Cumulative WIDE row — one per participant, upserted by `id`. Column groups mirror v4's sheet so
+  // the two studies read the same: IDENTITY (`id` = the CA-XXXXX code, `name` = typed name) → STATUS
+  // → ASSIGNMENT → DEMOGRAPHICS → the six factor weights (the DV). `complete` (0/1) uses v4's exact
+  // key, so it's a single column. Same shape whether we save mid-run (per-page) or at the end.
   const buildWide = (current: Step): Record<string, string | number | null> => {
     const wide: Record<string, string | number | null> = {
-      participantId,
+      // identity
+      id: participantId,
+      name,
+      // status
+      furthestStep: current,
+      complete: current === 'done' ? 1 : 0,
+      // assignment
       study: STUDY_CODE,
       condition,
       dataset: dataset.id,
-      lastStep: current,
-      completed: current === 'done' ? 1 : 0,
-      name,
+      // demographics
       race,
       age: age ? Number(age) : null,
       gender,
       hispanic,
       income,
     };
+    // the dependent variable: points allocated to each of the six factors
     for (const c of config.criteria) wide[`factor_${c.key}`] = rubric.weights[c.key] ?? 0;
     return wide;
   };
 
   useEffect(() => {
     stepEnteredAt.current = performance.now();
-    logEvent('session_start', { study: STUDY_CODE, participantId, condition, dataset: dataset.id });
-    // Entrance log — paired with the exit log at 'done' to compute completion / abandonment.
-    logEvent('entrance', { study: STUDY_CODE, participantId, condition, dataset: dataset.id });
-    logEvent('page_enter', { step: 'welcome' });
+    const resumed = !!boot.persisted;
+    // Events are keyed by participantId in the sheet and every run's study/condition/dataset live in
+    // the WIDE row, so we DON'T repeat them on each event — keeping the Events tab lean (like v4's).
+    logEvent('session_start', { resumed });
+    // Fresh load → log an entrance (paired with the exit at 'done' → completion / abandonment).
+    // Resumed load (refresh mid-study) → log a 'resume' instead, so entrances stay one-per-run.
+    if (resumed) logEvent('resume', { step });
+    else logEvent('entrance');
+    logEvent('page_enter', { step });
+    // Restore the rubric they had built before the reload (useRubric otherwise starts blank).
+    if (boot.persisted?.weights) rubric.setAll(boot.persisted.weights);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Per-page saving (07-03 item 9): persist a cumulative row on every step change so an abandoned
-  // run is still captured (v6's SHEET_ENDPOINT is blank → this lands in localStorage for now; add
-  // an endpoint in logger.ts to push these to the Sheet like v4 does).
+  // Refresh persistence (the "cookies" item): snapshot the whole session on every change so a reload
+  // resumes exactly where they left off. We only persist ONCE the participant has entered the study
+  // (past welcome/consent) — matching the resume threshold above, so intro refreshes stay fresh and a
+  // new random condition can be rolled. On 'done' we clear it so a reused browser starts fresh. A
+  // `?cond=` preview never saves, so it can't overwrite a real participant's run.
   useEffect(() => {
-    void saveResponse({ name: participantId, wide: buildWide(step) });
+    if (boot.forcedCond) return;
+    if (step === 'welcome' || step === 'consent') return;
+    if (step === 'done') {
+      clearSession();
+      return;
+    }
+    saveSession({
+      participantId,
+      condition,
+      dataset: dataset.id,
+      step,
+      name,
+      race,
+      age,
+      gender,
+      hispanic,
+      income,
+      consented,
+      explored,
+      weights: rubric.weights,
+    });
+  }, [
+    boot.forcedCond,
+    participantId,
+    condition,
+    dataset.id,
+    step,
+    name,
+    race,
+    age,
+    gender,
+    hispanic,
+    income,
+    consented,
+    explored,
+    rubric.weights,
+  ]);
+
+  // Per-page saving (07-03 item 9): upsert the cumulative WIDE row on every step change so an
+  // abandoned run is still captured. SHEET_ENDPOINT is now set (shared with v4) → this pushes to the
+  // "v6 Responses" / "v6 Events" tabs, with a localStorage backup always kept too.
+  useEffect(() => {
+    void saveResponse({ id: participantId, name, wide: buildWide(step) });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
@@ -149,10 +233,10 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
   };
 
   const finishStudy = () => {
-    logEvent('exit', { study: STUDY_CODE, participantId, condition, completed: 1 });
-    logEvent('study_complete', { condition });
-    // Final save carries the completed flag; the per-page effect will also fire on the 'done' step.
-    void saveResponse({ name: participantId, wide: buildWide('done') });
+    // 'exit' pairs with 'entrance' for the completion rate; the wide row's `complete=1` records it too.
+    logEvent('exit');
+    // Final save stamps submittedAt + complete; the per-page effect also fires on the 'done' step.
+    void saveResponse({ id: participantId, name, wide: buildWide('done'), complete: true });
     go('done');
   };
 
@@ -161,6 +245,41 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
 
   return (
     <div className="study">
+      {/* Demo controls (top-right) to compare the shift-visual variants for the lab — not shown to
+          participants in the final study. Advance = click/scrub vs scroll-lock; Chart = bar vs pie. */}
+      <div className="demotoggle" role="group" aria-label="Demo controls">
+        <div className="demotoggle__row">
+          <span className="demotoggle__label">Advance</span>
+          <button
+            className={`demotoggle__btn ${!lockMode ? 'is-on' : ''}`}
+            onClick={() => setLockMode(false)}
+          >
+            Click
+          </button>
+          <button
+            className={`demotoggle__btn ${lockMode ? 'is-on' : ''}`}
+            onClick={() => setLockMode(true)}
+          >
+            Scroll-lock
+          </button>
+        </div>
+        <div className="demotoggle__row">
+          <span className="demotoggle__label">Chart</span>
+          <button
+            className={`demotoggle__btn ${chartMode === 'bar' ? 'is-on' : ''}`}
+            onClick={() => setChartMode('bar')}
+          >
+            Bar
+          </button>
+          <button
+            className={`demotoggle__btn ${chartMode === 'pie' ? 'is-on' : ''}`}
+            onClick={() => setChartMode('pie')}
+          >
+            Pie
+          </button>
+        </div>
+      </div>
+
       <header className="study__bar">
         <span className="study__brand">College Admissions</span>
         <ol className="study__progress" aria-label="Progress">
@@ -292,9 +411,11 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
         {step === 'learn' && (
           <section className="study__card study__card--article">
             <article className="article">
-              <p className="article__kicker">
-                {article.outlet} · {article.kicker}
-              </p>
+              {(article.outlet || article.kicker) && (
+                <p className="article__kicker">
+                  {[article.outlet, article.kicker].filter(Boolean).join(' · ')}
+                </p>
+              )}
               <h1 className="article__headline">{article.headline}</h1>
               <p className="article__dek">{article.dek}</p>
               <p className="article__byline">{article.byline}</p>
@@ -308,18 +429,38 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                 <figure className="article__figure">
                   <p className="article__figintro">{article.widgetIntro}</p>
                   {condition === 'shift' ? (
-                    <DemographicShift dataset={dataset} onExplored={() => setExplored(true)} />
+                    <DemographicShift
+                      dataset={dataset}
+                      onExplored={() => setExplored(true)}
+                      scrollLock={lockMode}
+                      chartMode={chartMode}
+                    />
                   ) : (
-                    <ProcessTimeline dataset={dataset} onExplored={() => setExplored(true)} />
+                    <ProcessTimeline
+                      dataset={dataset}
+                      onExplored={() => setExplored(true)}
+                      scrollLock={lockMode}
+                    />
                   )}
                 </figure>
 
-                {article.body.map((p, i) => (
-                  <p key={`body-${i}`}>{p}</p>
-                ))}
+                {/* In scroll-lock mode the widget nearly fills the screen, so we hold back everything
+                    below it ("What stands out…" + the prompt) until the reader has scrubbed every year
+                    — then it's revealed. Keeps the lock uncluttered; in click mode it's always shown. */}
+                {(!lockMode || explored) && (
+                  <>
+                    {article.body.map((p, i) => (
+                      <p key={`body-${i}`} className="article__reveal">
+                        {p}
+                      </p>
+                    ))}
 
-                {/* Verbatim stimulus instruction (docx page 3) — the formal prompt into the task. */}
-                <aside className="article__prompt">{STIMULUS[condition].prompt}</aside>
+                    {/* Verbatim stimulus instruction (docx page 3) — the formal prompt into the task. */}
+                    <aside className="article__prompt article__reveal">
+                      {STIMULUS[condition].prompt}
+                    </aside>
+                  </>
+                )}
               </div>
             </article>
 
