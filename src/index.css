@@ -1360,6 +1360,24 @@ input[type='range']::-moz-range-thumb {
   background: var(--track);
   border: 1px solid rgba(40, 30, 15, 0.08);
 }
+/* Pie variant of the composition (demo toggle — Randy's "could we do pie charts?" idea). */
+.shift__pie {
+  height: 240px;
+  margin: 4px 0;
+}
+/* Scroll-lock demo mode: hint + a soft outline while the page is locked on the widget. */
+.shift__lockhint {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--muted);
+  text-align: center;
+}
+.shift--locked {
+  outline: 2px dashed var(--line);
+  outline-offset: 10px;
+  border-radius: 6px;
+}
 .shift__seg {
   height: 100%;
   display: flex;
@@ -1596,6 +1614,11 @@ input[type='range']::-moz-range-thumb {
   color: var(--muted);
   margin-bottom: 10px;
 }
+/* The post-widget copy ("What stands out…" + prompt) fades up when it's revealed — instant pop-in
+   would feel abrupt, especially in scroll-lock mode where it appears only after scrubbing the years. */
+.article__reveal {
+  animation: rise 0.5s both;
+}
 /* The verbatim stimulus instruction, set apart as a pull-aside before the task. */
 .article__prompt {
   margin-top: 8px;
@@ -1660,4 +1683,55 @@ input[type='range']::-moz-range-thumb {
 }
 .v6-original .shift__legrow:last-child {
   border-bottom: none;
+}
+
+/* ─────────────  Demo-only toggles (top-right)  ─────────────
+   Internal controls so the lab can compare shift-visual variants live (scroll-lock vs click,
+   pie vs bar). Not part of the participant-facing study — hidden/removed before real runs. */
+.demotoggle {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 12px 34px -22px rgba(40, 30, 15, 0.6);
+}
+.demotoggle__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.demotoggle__label {
+  width: 58px;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.demotoggle__btn {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.demotoggle__btn:hover {
+  border-color: var(--ink);
+}
+.demotoggle__btn.is-on {
+  background: var(--ink);
+  color: var(--panel);
+  border-color: var(--ink);
 }

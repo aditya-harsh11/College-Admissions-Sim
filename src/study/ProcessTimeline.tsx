@@ -1,4 +1,5 @@
 import { useYearScrubber } from '../hooks/useYearScrubber';
+import { useScrollLock } from '../hooks/useScrollLock';
 import { PROCESS_STEPS, type DemographicDataset } from './demographics';
 import { YearStepper } from './YearStepper';
 
@@ -14,9 +15,12 @@ import { YearStepper } from './YearStepper';
 export function ProcessTimeline({
   dataset,
   onExplored,
+  scrollLock = false,
 }: {
   dataset: DemographicDataset;
   onExplored?: () => void;
+  /** Demo toggle: lock the page on the widget so scrolling steps the year until all are seen. */
+  scrollLock?: boolean;
 }) {
   const { years } = dataset;
   const scrub = useYearScrubber(years, 'process', onExplored);
@@ -24,8 +28,10 @@ export function ProcessTimeline({
   // Map each snapshot year onto a process milestone (four of each).
   const step = PROCESS_STEPS[Math.min(yi, PROCESS_STEPS.length - 1)];
 
+  const lockRef = useScrollLock(scrollLock, scrub, years.length);
+
   return (
-    <div className="shift">
+    <div className={`shift ${scrollLock && !scrub.allSeen ? 'shift--locked' : ''}`} ref={lockRef}>
       <div className="shift__head">
         <p className="panel__kicker">United States</p>
         <h3 className="shift__title">
@@ -59,6 +65,10 @@ export function ProcessTimeline({
           Over these years, applying went from a mostly local, paper process to a high-volume,
           technology-driven one.
         </p>
+      )}
+
+      {scrollLock && !scrub.allSeen && (
+        <p className="shift__lockhint">Scroll to move through the years — the page unlocks once you’ve seen them all.</p>
       )}
 
       <p className="shift__source">A general timeline of U.S. college admissions.</p>

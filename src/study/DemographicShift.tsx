@@ -1,5 +1,7 @@
 import { type CSSProperties } from 'react';
+import { Cell, Pie, PieChart, ResponsiveContainer } from 'recharts';
 import { useAnimatedNumber } from '../hooks/useAnimatedNumber';
+import { useScrollLock } from '../hooks/useScrollLock';
 import {
   activeCategories,
   describeShift,
@@ -27,9 +29,15 @@ const ROW = 40;
 export function DemographicShift({
   dataset,
   onExplored,
+  scrollLock = false,
+  chartMode = 'bar',
 }: {
   dataset: DemographicDataset;
   onExplored?: () => void;
+  /** Demo toggle: lock the page on the widget so scrolling steps the year until all are seen. */
+  scrollLock?: boolean;
+  /** Demo toggle: draw the composition as a stacked bar (default) or a pie (Randy's idea). */
+  chartMode?: 'bar' | 'pie';
 }) {
   const { years, series, focus } = dataset;
   const scrub = useYearScrubber(years, 'demo', onExplored);
@@ -46,8 +54,10 @@ export function DemographicShift({
   const focusNow = useAnimatedNumber(series[focus][yi] ?? 0);
   const focusDelta = (series[focus][yi] ?? 0) - (series[focus][0] ?? 0);
 
+  const lockRef = useScrollLock(scrollLock, scrub, years.length);
+
   return (
-    <div className="shift">
+    <div className={`shift ${scrollLock && !scrub.allSeen ? 'shift--locked' : ''}`} ref={lockRef}>
       <div className="shift__head">
         <p className="panel__kicker">{dataset.scope}</p>
         <h3 className="shift__title">
@@ -74,23 +84,56 @@ export function DemographicShift({
         </span>
       </div>
 
-      {/* The stacked bar — segments ease to their new width as the year changes. */}
-      <div className="shift__bar" role="img" aria-label={`Composition in ${years[yi]}`}>
-        {cats.map((c) => {
-          const v = series[c.key][yi] ?? 0;
-          const w = total ? (v / total) * 100 : 0;
-          return (
-            <div
-              key={c.key}
-              className="shift__seg"
-              style={{ width: `${w}%`, background: c.color } as CSSProperties}
-              title={`${c.label}: ${fmt(v)}%`}
-            >
-              {w > 7 && <span className="shift__seglabel">{Math.round(v)}%</span>}
-            </div>
-          );
-        })}
-      </div>
+      {/* Composition: a stacked bar (default) or, via the demo toggle, a pie (Randy's idea). Both
+          ease to the new year's shares. */}
+      {chartMode === 'pie' ? (
+        <div className="shift__pie" role="img" aria-label={`Composition in ${years[yi]}`}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={cats.map((c) => ({ name: c.short, value: series[c.key][yi] ?? 0, color: c.color }))}
+                dataKey="value"
+                nameKey="name"
+                outerRadius="94%"
+                startAngle={90}
+                endAngle={-270}
+                paddingAngle={1}
+                stroke="var(--panel)"
+                strokeWidth={2}
+                isAnimationActive
+                animationDuration={420}
+                animationEasing="ease-out"
+              >
+                {cats.map((c) => (
+                  <Cell key={c.key} fill={c.color} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <div className="shift__bar" role="img" aria-label={`Composition in ${years[yi]}`}>
+          {cats.map((c) => {
+            const v = series[c.key][yi] ?? 0;
+            const w = total ? (v / total) * 100 : 0;
+            return (
+              <div
+                key={c.key}
+                className="shift__seg"
+                style={{ width: `${w}%`, background: c.color } as CSSProperties}
+                title={`${c.label}: ${fmt(v)}%`}
+              >
+                {w > 7 && <span className="shift__seglabel">{Math.round(v)}%</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Scroll-lock demo hint: shown while the page is locked on the widget (Ben's idiot-proof idea). */}
+      {scrollLock && !scrub.allSeen && (
+        <p className="shift__lockhint">Scroll to move through the years — the page unlocks once you’ve seen them all.</p>
+      )}
 
       {/* The YEAR, moved DOWN and made big so participants are forced to see it (item 4). */}
       <div className="shift__yearband">
