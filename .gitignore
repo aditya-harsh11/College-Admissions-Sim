@@ -29,3 +29,6 @@ dist-ssr
 # Private working notes — never shipped or shared
 DEV_NOTES.md
 
+# Source material from the lab (demographics data, stimulus drafts, docx) — local only, never shipped
+documents/
+
