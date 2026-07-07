@@ -132,10 +132,11 @@ export function getSessionId(): string {
   return sessionId;
 }
 
-// Deployed Google Apps Script web-app URL (ends in /exec). Paste yours here once deployed (see
-// google-apps-script.gs). Left blank → responses are kept in localStorage only, so nothing is lost.
+// Deployed Google Apps Script web-app URL (ends in /exec). SHARED with v6 — the same web app routes
+// by the `study` field (see google-apps-script.gs): v4 rows land in the "v4 Responses" / "v4 Events"
+// tabs (v4 sends no study code, so it's the default), v6 in its own tabs. Left blank → localStorage only.
 const SHEET_ENDPOINT =
-  'https://script.google.com/macros/s/AKfycbzSYhBdwPC3ENem3kmlgvPlH-JV5CZQO6uDmH47WocTFu0lG_T_QMnXR9WNm23kwyrpYw/exec';
+  'https://script.google.com/macros/s/AKfycbzUQ8Ikw4XCOXcxEvvZnzsuVNIvhXWAD2gbqTAxErd8K-JEpCWRK_zxBgsYDZmyF4AnOQ/exec';
 
 // How many buffered events we've already shipped. Each save sends only the NEW events, so calling
 // saveResponse once per page doesn't re-send the whole log every time. Advanced only as far as the

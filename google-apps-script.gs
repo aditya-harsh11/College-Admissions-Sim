@@ -4,19 +4,25 @@
  * SETUP (one-time):
  *   1. Make a Google Sheet. Open it → Extensions → Apps Script.
  *   2. Paste this whole file in (replace everything in the editor).
- *   3. Deploy → New deployment → type "Web app".
- *        - Execute as: Me
- *        - Who has access: Anyone
- *      Copy the Web app URL (ends in /exec) into SHEET_ENDPOINT in src/lib/logger.ts.
+ *   3. Deploy → Manage deployments → edit the existing Web app deployment → Deploy a new version
+ *      (this KEEPS the same /exec URL, so no app change is needed). For a first deploy: New
+ *      deployment → type "Web app" → Execute as: Me, Who has access: Anyone → copy the /exec URL
+ *      into SHEET_ENDPOINT in src/lib/logger.ts (v4 and v6 share the same URL).
+ *
+ * FOUR tabs — two per version, so v4 and v6 data never mix:
+ *   • "v4 Responses" / "v4 Events" — the v4 pre/post rubric study.
+ *   • "v6 Responses" / "v6 Events" — the v6 shifting-demographics study.
+ * Routing is by the `study` field the app sends in `wide` (e.g. "ca-v6"): anything containing "v6"
+ * goes to the v6 tabs; everything else (including v4, which sends no study code) goes to the v4 tabs.
+ * The WIDE row is UPSERTED (merged) by a key column so per-page saves keep building the same
+ * participant's row instead of duplicating it — keyed by `participantId` for v6, by `name` for v4.
  *
  * This script is GENERIC: it writes whatever columns the app sends, so you never need to edit or
- * redeploy it again when the saved columns change — adjust them in the app (StudyFlow `wide`).
+ * redeploy it when the saved columns change — adjust them in the app (`wide`).
  *
- *   • "Responses" tab — WIDE form: ONE row per participant, MERGED (upserted) by `name`. The app
- *                       saves after each page, so the row fills in as the participant progresses and
- *                       partial/abandoned runs are still captured.
- *   • "Events" tab    — LONG form: one row per logged interaction, each tagged with the name. The
- *                       app sends only NEW events per save, so events are simply appended.
+ * (Upgrading from the old 2-tab script? Your existing "Responses"/"Events" tabs hold older v4 data.
+ * Rename them to "v4 Responses"/"v4 Events" to keep that data flowing into the same tabs; otherwise
+ * new v4 tabs are created and the old ones are left untouched.)
  *
  * Headers are managed automatically and grow as new fields appear.
  */
@@ -26,11 +32,19 @@ function doPost(e) {
     var data = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
 
+    // Route by study code (sent in `wide.study`, e.g. "ca-v6"). v4 sends none → defaults to v4.
+    var study = (data.wide && data.wide.study) || data.study || '';
+    var isV6 = String(study).indexOf('v6') !== -1;
+    var respTab = isV6 ? 'v6 Responses' : 'v4 Responses';
+    var eventTab = isV6 ? 'v6 Events' : 'v4 Events';
+    // v6 rows are unique per participant id; v4 rows are keyed by the participant's typed name.
+    var keyCol = isV6 ? 'participantId' : 'name';
+
     if (data.wide) {
-      upsertRow(getSheet(ss, 'Responses'), data.wide, 'name');
+      upsertRow(getSheet(ss, respTab), data.wide, keyCol);
     }
     (data.events || []).forEach(function (ev) {
-      appendRow(getSheet(ss, 'Events'), Object.assign({ name: data.name || '' }, ev));
+      appendRow(getSheet(ss, eventTab), Object.assign({ name: data.name || '' }, ev));
     });
 
     return json({ ok: true });
@@ -40,10 +54,10 @@ function doPost(e) {
 }
 
 /**
- * MERGE an object into the single row whose `keyCol` matches obj[keyCol] (e.g. one row per name):
- * update just the provided cells, leave the rest, and append a new row if no match exists. Headers
- * grow to cover any new keys, exactly like appendRow. Used for the WIDE Responses tab so saving
- * once per page keeps building the same participant's row instead of adding duplicates.
+ * MERGE an object into the single row whose `keyCol` matches obj[keyCol] (e.g. one row per
+ * participant): update just the provided cells, leave the rest, and append a new row if no match
+ * exists. Headers grow to cover any new keys. Used for the WIDE Responses tabs so saving once per
+ * page keeps building the same participant's row instead of adding duplicates.
  */
 function upsertRow(sheet, obj, keyCol) {
   var headers = ensureHeaders(sheet, obj);
@@ -105,11 +119,6 @@ function writeRow(sheet, headers, rowNum, obj, existing) {
   sheet.getRange(rowNum, 1, 1, values.length).setValues([values]);
 }
 
-// Optional: visiting the /exec URL in a browser confirms the app is live.
-function doGet() {
-  return json({ ok: true, service: 'college-admissions-study' });
-}
-
 /** Append an object as a row, growing the header row to cover any new keys. */
 function appendRow(sheet, obj) {
   var lastCol = sheet.getLastColumn();
@@ -138,6 +147,11 @@ function appendRow(sheet, obj) {
 
 function getSheet(ss, name) {
   return ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+// Optional: visiting the /exec URL in a browser confirms the app is live.
+function doGet() {
+  return json({ ok: true, service: 'college-admissions-study' });
 }
 
 function json(obj) {
