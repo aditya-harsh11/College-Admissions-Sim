@@ -15,16 +15,17 @@ import { YearStepper } from './YearStepper';
 export function ProcessTimeline({
   dataset,
   onExplored,
-  scrollLock = false,
+  advanceMode = 'click',
 }: {
   dataset: DemographicDataset;
   onExplored?: () => void;
-  /** Demo toggle: lock the page on the widget so scrolling steps the year until all are seen. */
-  scrollLock?: boolean;
+  /** Demo toggle: how the reader steps years — 'click' chips, 'scroll'-lock, or 'next' Prev/Next. */
+  advanceMode?: 'click' | 'scroll' | 'next';
 }) {
   const { years } = dataset;
   const scrub = useYearScrubber(years, 'process', onExplored);
   const yi = scrub.index;
+  const scrollLock = advanceMode === 'scroll';
   // Map each snapshot year onto a process milestone (four of each).
   const step = PROCESS_STEPS[Math.min(yi, PROCESS_STEPS.length - 1)];
 
@@ -58,6 +59,16 @@ export function ProcessTimeline({
         index={scrub.index}
         seen={scrub.seen}
         onSetYear={scrub.setYear}
+        nav={
+          advanceMode === 'next'
+            ? {
+                onPrev: scrub.prev,
+                onNext: scrub.next,
+                prevDisabled: scrub.cooling || scrub.atStart,
+                nextDisabled: scrub.cooling || scrub.atEnd,
+              }
+            : undefined
+        }
       />
 
       {scrub.allSeen && (

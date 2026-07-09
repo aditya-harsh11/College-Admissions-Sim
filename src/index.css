@@ -1652,6 +1652,34 @@ input[type='range']::-moz-range-thumb {
 .stepper__scrub {
   margin-bottom: 0;
 }
+/* Prev/Next controls for the "next" advance mode (07-09). Chips above stay usable. */
+.stepper__nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+.stepper__navbtn {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink);
+  background: var(--ink);
+  color: var(--panel);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.stepper__navbtn:hover:not(:disabled) {
+  background: #000;
+}
+.stepper__navbtn:disabled {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--line);
+  cursor: not-allowed;
+}
 
 /* Control condition: a single process snapshot that swaps as you scrub the years. */
 .process__card {

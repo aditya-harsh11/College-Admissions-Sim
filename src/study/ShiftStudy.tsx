@@ -118,9 +118,9 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
   const [rubricError, setRubricError] = useState<number | null>(null);
 
   // Demo-only presentation toggles (top-right) so the lab can compare shift-visual variants live —
-  // NOT participant data, so they're deliberately not persisted in the session. `lockMode` = Ben's
-  // scroll-to-advance lock vs the click/scrub version; `chartMode` = pie vs the stacked bar.
-  const [lockMode, setLockMode] = useState(false);
+  // NOT participant data, so they're deliberately not persisted in the session. `advanceMode` = how
+  // the reader steps years (click chips / scroll-lock / Prev-Next buttons); `chartMode` = pie vs bar.
+  const [advanceMode, setAdvanceMode] = useState<'click' | 'scroll' | 'next'>('click');
   const [chartMode, setChartMode] = useState<'bar' | 'pie'>('bar');
   // Consent full-screen reading overlay (07-09: let people expand the page-long consent text).
   const [consentFull, setConsentFull] = useState(false);
@@ -296,16 +296,22 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
         <div className="demotoggle__row">
           <span className="demotoggle__label">Advance</span>
           <button
-            className={`demotoggle__btn ${!lockMode ? 'is-on' : ''}`}
-            onClick={() => setLockMode(false)}
+            className={`demotoggle__btn ${advanceMode === 'click' ? 'is-on' : ''}`}
+            onClick={() => setAdvanceMode('click')}
           >
             Click
           </button>
           <button
-            className={`demotoggle__btn ${lockMode ? 'is-on' : ''}`}
-            onClick={() => setLockMode(true)}
+            className={`demotoggle__btn ${advanceMode === 'scroll' ? 'is-on' : ''}`}
+            onClick={() => setAdvanceMode('scroll')}
           >
             Scroll-lock
+          </button>
+          <button
+            className={`demotoggle__btn ${advanceMode === 'next' ? 'is-on' : ''}`}
+            onClick={() => setAdvanceMode('next')}
+          >
+            Next
           </button>
         </div>
         <div className="demotoggle__row">
@@ -441,14 +447,14 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                     <DemographicShift
                       dataset={dataset}
                       onExplored={() => setExplored(true)}
-                      scrollLock={lockMode}
+                      advanceMode={advanceMode}
                       chartMode={chartMode}
                     />
                   ) : (
                     <ProcessTimeline
                       dataset={dataset}
                       onExplored={() => setExplored(true)}
-                      scrollLock={lockMode}
+                      advanceMode={advanceMode}
                     />
                   )}
                 </figure>
@@ -456,7 +462,7 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                 {/* In scroll-lock mode the widget nearly fills the screen, so we hold back everything
                     below it ("What stands out…" + the prompt) until the reader has scrubbed every year
                     — then it's revealed. Keeps the lock uncluttered; in click mode it's always shown. */}
-                {(!lockMode || explored) && (
+                {(advanceMode !== 'scroll' || explored) && (
                   <>
                     {article.body.map((p, i) => (
                       <p key={`body-${i}`} className="article__reveal">

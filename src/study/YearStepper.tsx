@@ -10,11 +10,14 @@ export function YearStepper({
   index,
   seen,
   onSetYear,
+  nav,
 }: {
   years: readonly number[];
   index: number;
   seen: Set<number>;
   onSetYear: (i: number) => void;
+  /** Optional Prev/Next controls (07-09 "next" advance mode). Chips stay clickable regardless. */
+  nav?: { onPrev: () => void; onNext: () => void; prevDisabled: boolean; nextDisabled: boolean };
 }) {
   return (
     <div className="stepper">
@@ -44,6 +47,17 @@ export function YearStepper({
           ))}
         </div>
       </div>
+
+      {nav && (
+        <div className="stepper__nav">
+          <button className="stepper__navbtn" onClick={nav.onPrev} disabled={nav.prevDisabled}>
+            ← Previous
+          </button>
+          <button className="stepper__navbtn" onClick={nav.onNext} disabled={nav.nextDisabled}>
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }

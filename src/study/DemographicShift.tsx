@@ -29,19 +29,20 @@ const ROW = 40;
 export function DemographicShift({
   dataset,
   onExplored,
-  scrollLock = false,
+  advanceMode = 'click',
   chartMode = 'bar',
 }: {
   dataset: DemographicDataset;
   onExplored?: () => void;
-  /** Demo toggle: lock the page on the widget so scrolling steps the year until all are seen. */
-  scrollLock?: boolean;
+  /** Demo toggle: how the reader steps years — 'click' chips, 'scroll'-lock, or 'next' Prev/Next. */
+  advanceMode?: 'click' | 'scroll' | 'next';
   /** Demo toggle: draw the composition as a stacked bar (default) or a pie (Randy's idea). */
   chartMode?: 'bar' | 'pie';
 }) {
   const { years, series, focus } = dataset;
   const scrub = useYearScrubber(years, 'demo', onExplored);
   const yi = scrub.index;
+  const scrollLock = advanceMode === 'scroll';
 
   const cats = activeCategories(dataset);
   const total = yearTotal(dataset, yi);
@@ -148,6 +149,16 @@ export function DemographicShift({
         index={scrub.index}
         seen={scrub.seen}
         onSetYear={scrub.setYear}
+        nav={
+          advanceMode === 'next'
+            ? {
+                onPrev: scrub.prev,
+                onNext: scrub.next,
+                prevDisabled: scrub.cooling || scrub.atStart,
+                nextDisabled: scrub.cooling || scrub.atEnd,
+              }
+            : undefined
+        }
       />
 
       {/* Ranked legend — rows physically re-order (glide) as groups rise and fall (item 5). */}

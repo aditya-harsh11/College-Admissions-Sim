@@ -18,9 +18,18 @@ export function useYearScrubber(
   const enteredAt = useRef(0);
   const firedExplored = useRef(false);
 
+  // Short enforced pause between Next/Prev steps (07-09: so people can't blitz past the years).
+  // NOT applied to chip/scrub jumps, which stay instant for side-by-side comparison.
+  const [cooling, setCooling] = useState(false);
+  const coolTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const PAUSE_MS = 800;
+
   // Stamp the entry time after mount (kept out of render so it stays pure).
   useEffect(() => {
     enteredAt.current = performance.now();
+    return () => {
+      if (coolTimer.current) clearTimeout(coolTimer.current);
+    };
   }, []);
 
   const setYear = (next: number) => {
@@ -43,6 +52,18 @@ export function useYearScrubber(
     });
   };
 
+  // Paced one-step move for the Next/Prev buttons: advances, then briefly locks the buttons so each
+  // year stays on screen for a moment. Chip clicks bypass this (they call setYear directly).
+  const stepBy = (dir: number) => {
+    if (cooling) return;
+    const target = index + dir;
+    if (target < 0 || target >= years.length) return;
+    setYear(target);
+    setCooling(true);
+    if (coolTimer.current) clearTimeout(coolTimer.current);
+    coolTimer.current = setTimeout(() => setCooling(false), PAUSE_MS);
+  };
+
   useEffect(() => {
     if (!firedExplored.current && seen.size === years.length) {
       firedExplored.current = true;
@@ -55,5 +76,10 @@ export function useYearScrubber(
     seen,
     allSeen: seen.size === years.length,
     setYear,
+    next: () => stepBy(1),
+    prev: () => stepBy(-1),
+    cooling,
+    atStart: index === 0,
+    atEnd: index === years.length - 1,
   };
 }
