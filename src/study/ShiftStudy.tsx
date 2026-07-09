@@ -87,6 +87,9 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
     const resumable =
       !forcedCond &&
       !!saved &&
+      // Only resume a step that still exists in the current flow — a session saved on an old build
+      // (e.g. the removed 'info' step) falls through to a fresh welcome instead of a blank page.
+      ORDER.includes(saved.step as Step) &&
       saved.step !== 'welcome' &&
       saved.step !== 'consent' &&
       saved.step !== 'done';
