@@ -308,9 +308,11 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                 {p}
               </p>
             ))}
-            <button className="btn btn--primary" onClick={() => go('consent')}>
-              Begin
-            </button>
+            <div className="study__actions">
+              <button className="btn btn--primary" onClick={() => go('consent')}>
+                Begin
+              </button>
+            </div>
           </section>
         )}
 
@@ -341,9 +343,11 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
               />
               <span>I’m 18 or older and I consent to participate.</span>
             </label>
-            <button className="btn btn--primary" disabled={!consented} onClick={() => go('info')}>
-              Continue
-            </button>
+            <div className="study__actions">
+              <button className="btn btn--primary" disabled={!consented} onClick={() => go('info')}>
+                Continue
+              </button>
+            </div>
           </section>
         )}
 
@@ -402,9 +406,11 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                 {p}
               </p>
             ))}
-            <button className="btn btn--primary" onClick={() => go('learn')}>
-              Continue
-            </button>
+            <div className="study__actions">
+              <button className="btn btn--primary" onClick={() => go('learn')}>
+                Continue
+              </button>
+            </div>
           </section>
         )}
 
@@ -576,9 +582,11 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                 ))}
               </select>
             </label>
-            <button className="btn btn--primary" onClick={finishStudy}>
-              Finish
-            </button>
+            <div className="study__actions">
+              <button className="btn btn--primary" onClick={finishStudy}>
+                Finish
+              </button>
+            </div>
           </section>
         )}
 

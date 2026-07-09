@@ -332,6 +332,20 @@ body::before {
   cursor: not-allowed;
 }
 
+/* Forward/nav action row — right-justified on every study page (07-09 review: consistent
+   placement + a slightly larger button). Overrides .btn--primary's flex:1 so it sizes to content. */
+.study__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 22px;
+}
+.study__actions .btn--primary {
+  flex: 0 0 auto;
+  min-width: 170px;
+  padding: 12px 30px;
+  font-size: 0.95rem;
+}
+
 .rubric__status {
   flex: 1;
   font-family: var(--mono);
@@ -1266,9 +1280,13 @@ input[type='range']::-moz-range-thumb {
   margin-top: clamp(20px, 3vh, 30px);
   padding-top: 18px;
   border-top: 1px solid var(--line-soft);
+  display: flex;
+  justify-content: flex-end;
 }
 .study__learnfoot .btn {
   min-width: 220px;
+  padding: 12px 30px;
+  font-size: 0.95rem;
 }
 
 /* The data object — its own inset "card on the card" so it reads as a real artifact. */
