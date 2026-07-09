@@ -21,10 +21,11 @@ export interface SavedSession {
   /** The current Step (kept as a string here so this module doesn't depend on ShiftStudy). */
   step: string;
   name: string;
-  race: string;
+  /** Race/ethnicity is now a check-all-that-apply list (07-09); `raceOther` holds the "Other" text. */
+  raceSel: string[];
+  raceOther: string;
   age: string;
   gender: string;
-  hispanic: string;
   income: string;
   consented: boolean;
   explored: boolean;

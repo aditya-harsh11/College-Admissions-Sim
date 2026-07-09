@@ -1085,6 +1085,47 @@ input[type='range']::-moz-range-thumb {
   color: var(--muted);
   margin-bottom: 6px;
 }
+/* Reset the native fieldset so it matches the other .study__field rows. */
+.study__fieldset {
+  border: none;
+  padding: 0;
+  margin-inline: 0;
+  min-inline-size: auto;
+}
+/* Check-all-that-apply race/ethnicity group (07-09). */
+.study__checks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+}
+@media (max-width: 520px) {
+  .study__checks {
+    grid-template-columns: 1fr;
+  }
+}
+.study__checkitem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 0.98rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.study__checkitem input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--ink);
+  flex: none;
+}
+.study__otherinput {
+  margin-top: 10px;
+}
+.study__fieldnote {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--accent);
+}
 .study__select {
   width: 100%;
   font-family: var(--sans);

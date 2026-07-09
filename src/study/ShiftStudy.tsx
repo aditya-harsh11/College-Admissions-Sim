@@ -8,33 +8,35 @@ import { ProcessTimeline } from './ProcessTimeline';
 import { ARTICLE, resolveDataset, STIMULUS, type Condition } from './demographics';
 import { clearSession, loadSession, saveSession } from './session';
 
-type Step = 'welcome' | 'consent' | 'info' | 'preview' | 'learn' | 'rubric' | 'demographics' | 'done';
-const ORDER: Step[] = ['welcome', 'consent', 'info', 'preview', 'learn', 'rubric', 'demographics', 'done'];
+type Step = 'welcome' | 'consent' | 'preview' | 'learn' | 'rubric' | 'demographics' | 'done';
+const ORDER: Step[] = ['welcome', 'consent', 'preview', 'learn', 'rubric', 'demographics', 'done'];
 const STEP_LABELS: Record<Step, string> = {
   welcome: 'Welcome',
   consent: 'Consent',
-  info: 'About you',
   preview: 'Overview',
   learn: 'The article',
   rubric: 'Your rubric',
-  demographics: 'A few questions',
+  demographics: 'About you',
   done: 'Done',
 };
 
 /** Short code identifying this app in the shared response sheet (07-03: a `study` column). */
 const STUDY_CODE = 'ca-v6';
 
+// Race + ethnicity as one "check all that apply" group (07-09): multiracial people pick several,
+// Hispanic/Latino is its own checkbox, "Other" reveals a free-text box, and "Prefer not to say" is
+// exclusive. Order matters — the two specials sit last.
 const RACE_OPTIONS = [
   'White',
   'Black or African American',
   'Asian',
   'American Indian or Alaska Native',
   'Native Hawaiian or Other Pacific Islander',
-  'Some other race',
+  'Hispanic or Latino',
+  'Other',
   'Prefer not to say',
 ];
 const GENDER_OPTIONS = ['Female', 'Male', 'Non-binary', 'Prefer to self-describe', 'Prefer not to say'];
-const HISPANIC_OPTIONS = ['No', 'Yes', 'Prefer not to say'];
 const INCOME_OPTIONS = [
   'Under $30,000',
   '$30,000–$59,999',
@@ -106,10 +108,10 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
   const [participantId] = useState(() => boot.persisted?.participantId ?? makeParticipantId());
 
   const [name, setName] = useState(() => boot.persisted?.name ?? '');
-  const [race, setRace] = useState(() => boot.persisted?.race ?? '');
+  const [raceSel, setRaceSel] = useState<string[]>(() => boot.persisted?.raceSel ?? []);
+  const [raceOther, setRaceOther] = useState(() => boot.persisted?.raceOther ?? '');
   const [age, setAge] = useState(() => boot.persisted?.age ?? '');
   const [gender, setGender] = useState(() => boot.persisted?.gender ?? '');
-  const [hispanic, setHispanic] = useState(() => boot.persisted?.hispanic ?? '');
   const [income, setIncome] = useState(() => boot.persisted?.income ?? '');
   const [consented, setConsented] = useState(() => boot.persisted?.consented ?? false);
   const [explored, setExplored] = useState(() => boot.persisted?.explored ?? false);
@@ -130,6 +132,21 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
   // the two studies read the same: IDENTITY (`id` = the CA-XXXXX code, `name` = typed name) → STATUS
   // → ASSIGNMENT → DEMOGRAPHICS → the six factor weights (the DV). `complete` (0/1) uses v4's exact
   // key, so it's a single column. Same shape whether we save mid-run (per-page) or at the end.
+  // Flatten the check-all-that-apply race/ethnicity into the two existing sheet columns: `race` = the
+  // raw multi-select (";"-joined, "Other" carrying its free text), `hispanic` = a derived Yes/No flag.
+  const raceStr = raceSel.includes('Prefer not to say')
+    ? 'Prefer not to say'
+    : raceSel
+        .map((r) => (r === 'Other' ? (raceOther.trim() ? `Other: ${raceOther.trim()}` : 'Other') : r))
+        .join('; ');
+  const hispanicStr = raceSel.includes('Prefer not to say')
+    ? 'Prefer not to say'
+    : raceSel.includes('Hispanic or Latino')
+      ? 'Yes'
+      : raceSel.length
+        ? 'No'
+        : '';
+
   const buildWide = (current: Step): Record<string, string | number | null> => {
     const wide: Record<string, string | number | null> = {
       // identity
@@ -143,10 +160,10 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
       condition,
       dataset: dataset.id,
       // demographics
-      race,
+      race: raceStr,
       age: age ? Number(age) : null,
       gender,
-      hispanic,
+      hispanic: hispanicStr,
       income,
     };
     // the dependent variable: points allocated to each of the six factors
@@ -188,10 +205,10 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
       dataset: dataset.id,
       step,
       name,
-      race,
+      raceSel,
+      raceOther,
       age,
       gender,
-      hispanic,
       income,
       consented,
       explored,
@@ -204,10 +221,10 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
     dataset.id,
     step,
     name,
-    race,
+    raceSel,
+    raceOther,
     age,
     gender,
-    hispanic,
     income,
     consented,
     explored,
@@ -229,6 +246,26 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
     logEvent('page_enter', { step: next });
     setStep(next);
   };
+
+  // Toggle one race/ethnicity checkbox. "Prefer not to say" is exclusive (clears everything else, and
+  // any real selection clears it), so the two never coexist.
+  const toggleRace = (opt: string) => {
+    setRaceSel((prev) => {
+      let next: string[];
+      if (opt === 'Prefer not to say') {
+        next = prev.includes(opt) ? [] : ['Prefer not to say'];
+      } else {
+        const base = prev.filter((r) => r !== 'Prefer not to say');
+        next = base.includes(opt) ? base.filter((r) => r !== opt) : [...base, opt];
+      }
+      logEvent('field_change', { field: 'race', value: next.join('; ') });
+      return next;
+    });
+  };
+
+  // 18+ gate (07-09): the study requires adults, so Finish stays disabled until a valid age ≥ 18.
+  const ageNum = Number(age);
+  const ageValid = age.trim() !== '' && Number.isInteger(ageNum) && ageNum >= 18 && ageNum <= 120;
 
   const finishRubric = () => {
     if (rubric.total !== 100) {
@@ -357,57 +394,10 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
               <span>I’m 18 or older and I consent to participate.</span>
             </label>
             <div className="study__actions">
-              <button className="btn btn--primary" disabled={!consented} onClick={() => go('info')}>
+              <button className="btn btn--primary" disabled={!consented} onClick={() => go('preview')}>
                 Continue
               </button>
             </div>
-          </section>
-        )}
-
-        {step === 'info' && (
-          <section className="study__card study__card--prose">
-            <p className="panel__kicker">About you</p>
-            <h2 className="study__h2">A couple of quick questions</h2>
-            <label className="study__field">
-              <span className="study__fieldlabel">Your name</span>
-              <input
-                className="study__input"
-                type="text"
-                value={name}
-                placeholder="Type your name"
-                onChange={(e) => {
-                  setName(e.target.value);
-                  logEvent('field_change', { field: 'name', value: e.target.value });
-                }}
-              />
-            </label>
-            <label className="study__field">
-              <span className="study__fieldlabel">Your race</span>
-              <select
-                className="study__select"
-                value={race}
-                onChange={(e) => {
-                  setRace(e.target.value);
-                  logEvent('field_change', { field: 'race', value: e.target.value });
-                }}
-              >
-                <option value="" disabled>
-                  Select a group
-                </option>
-                {RACE_OPTIONS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              className="btn btn--primary"
-              disabled={!name.trim() || !race}
-              onClick={() => go('preview')}
-            >
-              Continue
-            </button>
           </section>
         )}
 
@@ -521,11 +511,24 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
               These help us understand who took part. Answer as much as you’re comfortable with.
             </p>
             <label className="study__field">
+              <span className="study__fieldlabel">Your name</span>
+              <input
+                className="study__input"
+                type="text"
+                value={name}
+                placeholder="Type your name"
+                onChange={(e) => {
+                  setName(e.target.value);
+                  logEvent('field_change', { field: 'name', value: e.target.value });
+                }}
+              />
+            </label>
+            <label className="study__field">
               <span className="study__fieldlabel">Age</span>
               <input
                 className="study__input"
                 type="number"
-                min={0}
+                min={18}
                 max={120}
                 value={age}
                 placeholder="Your age"
@@ -534,6 +537,9 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                   logEvent('field_change', { field: 'age', value: e.target.value });
                 }}
               />
+              {age.trim() !== '' && !ageValid && (
+                <span className="study__fieldnote">You must be 18 or older to take part.</span>
+              )}
             </label>
             <label className="study__field">
               <span className="study__fieldlabel">Gender</span>
@@ -555,26 +561,33 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                 ))}
               </select>
             </label>
-            <label className="study__field">
-              <span className="study__fieldlabel">Are you of Hispanic, Latino, or Spanish origin?</span>
-              <select
-                className="study__select"
-                value={hispanic}
-                onChange={(e) => {
-                  setHispanic(e.target.value);
-                  logEvent('field_change', { field: 'hispanic', value: e.target.value });
-                }}
-              >
-                <option value="" disabled>
-                  Select…
-                </option>
-                {HISPANIC_OPTIONS.map((h) => (
-                  <option key={h} value={h}>
-                    {h}
-                  </option>
+            <fieldset className="study__field study__fieldset">
+              <legend className="study__fieldlabel">Race and ethnicity — select all that apply</legend>
+              <div className="study__checks">
+                {RACE_OPTIONS.map((r) => (
+                  <label key={r} className="study__checkitem">
+                    <input
+                      type="checkbox"
+                      checked={raceSel.includes(r)}
+                      onChange={() => toggleRace(r)}
+                    />
+                    <span>{r}</span>
+                  </label>
                 ))}
-              </select>
-            </label>
+              </div>
+              {raceSel.includes('Other') && (
+                <input
+                  className="study__input study__otherinput"
+                  type="text"
+                  value={raceOther}
+                  placeholder="Please specify"
+                  onChange={(e) => {
+                    setRaceOther(e.target.value);
+                    logEvent('field_change', { field: 'raceOther', value: e.target.value });
+                  }}
+                />
+              )}
+            </fieldset>
             <label className="study__field">
               <span className="study__fieldlabel">Family income</span>
               <select
@@ -596,7 +609,7 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
               </select>
             </label>
             <div className="study__actions">
-              <button className="btn btn--primary" onClick={finishStudy}>
+              <button className="btn btn--primary" disabled={!ageValid} onClick={finishStudy}>
                 Finish
               </button>
             </div>
