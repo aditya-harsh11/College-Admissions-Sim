@@ -497,9 +497,8 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                 Spend your <em>100 points</em>
               </h2>
               <p className="study__stagehint">
-                Divide 100 points across the factors below — give more to what you think universities
-                should value most when deciding who to admit. Your points must total exactly 100 to
-                continue.
+                Give more to what you think universities should value most when deciding who to admit.
+                Your points must total exactly 100 to continue.
               </p>
             </div>
             <AllocationPanel
