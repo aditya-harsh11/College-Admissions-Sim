@@ -44,6 +44,12 @@ const INCOME_OPTIONS = [
   'Prefer not to say',
 ];
 
+// Consent copy (placeholder) kept in one place so it renders identically inline and full-screen.
+const CONSENT_TEXT = [
+  'This is a research study about how people think universities should make admissions decisions. You’ll read some background information and then tell us what factors you think should matter. There are no right or wrong answers.',
+  'Your responses (the choices you make and how long you take) are recorded for research. Participation is voluntary and you may stop at any time. No personally identifying information is required.',
+];
+
 /**
  * A letter-prefixed participant ID (07-03 item 8), e.g. "CA-7F3K9" — NOT 101/102. The `CA-`
  * prefix makes the app obvious at a glance and the base-36 body forces a string type in R (no
@@ -114,6 +120,8 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
   // scroll-to-advance lock vs the click/scrub version; `chartMode` = pie vs the stacked bar.
   const [lockMode, setLockMode] = useState(false);
   const [chartMode, setChartMode] = useState<'bar' | 'pie'>('bar');
+  // Consent full-screen reading overlay (07-09: let people expand the page-long consent text).
+  const [consentFull, setConsentFull] = useState(false);
 
   const rubric = useRubric(config, 'rubric');
   const stepEnteredAt = useRef(0);
@@ -318,19 +326,24 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
 
         {step === 'consent' && (
           <section className="study__card study__card--prose">
-            <p className="panel__kicker">Informed consent</p>
-            <h2 className="study__h2">Before you start</h2>
+            <p className="panel__kicker">Before you begin</p>
+            <h2 className="study__h2">Informed consent</h2>
+            <div className="study__consenthead">
+              <button
+                type="button"
+                className="study__expand"
+                onClick={() => {
+                  setConsentFull(true);
+                  logEvent('consent_expand');
+                }}
+              >
+                ⤢ Read full screen
+              </button>
+            </div>
             <div className="study__consent">
-              <p>
-                This is a research study about how people think universities should make admissions
-                decisions. You’ll read some background information and then tell us what factors you
-                think should matter. There are no right or wrong answers.
-              </p>
-              <p>
-                Your responses (the choices you make and how long you take) are recorded for
-                research. Participation is voluntary and you may stop at any time. No personally
-                identifying information is required.
-              </p>
+              {CONSENT_TEXT.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
             </div>
             <label className="study__check">
               <input
@@ -611,6 +624,25 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
             <button className="btn btn--primary" onClick={() => setRubricError(null)}>
               Revise
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Full-screen consent reader (07-09) — the same consent text, expanded for easy reading. */}
+      {consentFull && (
+        <div className="consentfull" role="dialog" aria-modal="true">
+          <div className="consentfull__inner">
+            <div className="consentfull__head">
+              <h2 className="study__h2">Informed consent</h2>
+              <button className="btn" onClick={() => setConsentFull(false)}>
+                Close
+              </button>
+            </div>
+            <div className="consentfull__body">
+              {CONSENT_TEXT.map((p, i) => (
+                <p key={i}>{p}</p>
+              ))}
+            </div>
           </div>
         </div>
       )}

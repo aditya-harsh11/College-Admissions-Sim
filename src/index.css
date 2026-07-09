@@ -996,6 +996,68 @@ input[type='range']::-moz-range-thumb {
   color: var(--ink-soft);
 }
 
+.study__consenthead {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.study__expand {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.study__expand:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/* Full-screen consent reader overlay (07-09). */
+.consentfull {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--panel);
+  display: flex;
+  justify-content: center;
+  overflow-y: auto;
+  animation: rise 0.3s both;
+}
+.consentfull__inner {
+  width: 100%;
+  max-width: 720px;
+  padding: clamp(20px, 4vh, 48px) clamp(20px, 5vw, 40px) 60px;
+}
+.consentfull__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  padding: 8px 0 12px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.consentfull__head .study__h2 {
+  margin: 0;
+}
+.consentfull__body p {
+  font-size: 1.08rem;
+  line-height: 1.7;
+  color: var(--ink-soft);
+  margin: 18px 0;
+  max-width: 62ch;
+}
+
 .study__check {
   display: flex;
   align-items: center;
