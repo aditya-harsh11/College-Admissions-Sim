@@ -266,10 +266,6 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
     });
   };
 
-  // 18+ gate (07-09): the study requires adults, so Finish stays disabled until a valid age ≥ 18.
-  const ageNum = Number(age);
-  const ageValid = age.trim() !== '' && Number.isInteger(ageNum) && ageNum >= 18 && ageNum <= 120;
-
   const finishRubric = () => {
     if (rubric.total !== 100) {
       setRubricError(rubric.total);
@@ -532,8 +528,10 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                 value={name}
                 placeholder="Type your name"
                 onChange={(e) => {
-                  setName(e.target.value);
-                  logEvent('field_change', { field: 'name', value: e.target.value });
+                  // Letters only (any script), plus spaces, hyphens, apostrophes — strip digits/symbols.
+                  const cleaned = e.target.value.replace(/[^\p{L}\s'-]/gu, '');
+                  setName(cleaned);
+                  logEvent('field_change', { field: 'name', value: cleaned });
                 }}
               />
             </label>
@@ -542,7 +540,7 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
               <input
                 className="study__input"
                 type="number"
-                min={18}
+                min={0}
                 max={120}
                 value={age}
                 placeholder="Your age"
@@ -551,9 +549,6 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
                   logEvent('field_change', { field: 'age', value: e.target.value });
                 }}
               />
-              {age.trim() !== '' && !ageValid && (
-                <span className="study__fieldnote">You must be 18 or older to take part.</span>
-              )}
             </label>
             <label className="study__field">
               <span className="study__fieldlabel">Gender</span>
@@ -623,7 +618,7 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
               </select>
             </label>
             <div className="study__actions">
-              <button className="btn btn--primary" disabled={!ageValid} onClick={finishStudy}>
+              <button className="btn btn--primary" onClick={finishStudy}>
                 Finish
               </button>
             </div>

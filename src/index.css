@@ -1686,20 +1686,19 @@ input[type='range']::-moz-range-thumb {
   background: var(--panel);
   border: 1px solid var(--line-soft);
   border-radius: 10px;
-  padding: clamp(20px, 3vw, 32px);
-  min-height: 200px;
+  padding: clamp(16px, 2.5vw, 22px);
+  min-height: 96px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   animation: rise 0.4s both;
 }
 .process__head {
-  font-family: var(--serif);
+  font-size: 1.02rem;
   font-weight: 600;
-  font-size: clamp(1.3rem, 3vw, 1.8rem);
-  line-height: 1.1;
-  letter-spacing: -0.01em;
-  margin-bottom: 12px;
+  color: var(--ink);
+  line-height: 1.4;
+  margin-bottom: 4px;
 }
 .process__body {
   font-size: 1.02rem;
