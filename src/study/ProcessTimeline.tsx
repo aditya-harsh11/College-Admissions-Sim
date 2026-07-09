@@ -41,7 +41,7 @@ export function ProcessTimeline({
 
       {/* The process snapshot for the selected year (mirrors the demographic bar's slot). */}
       <div className="process__card" key={yi}>
-        <h4 className="process__head">{step.head}</h4>
+        {step.head && <h4 className="process__head">{step.head}</h4>}
         <p className="process__body">{step.body}</p>
       </div>
 

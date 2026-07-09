@@ -174,25 +174,29 @@ export function describeShift(ds: DemographicDataset): string {
 }
 
 // ── Control condition: the admissions PROCESS over time (no demographics) ──
-// Generic, web-plausible milestones — the parallel "things changed" framing that
-// isolates the demographic reveal. (AI-assisted copy, per Randy; tune freely.)
-// Note: does NOT open on a test-optional line (07-03: that primes "who I'm competing with").
+// The parallel "things changed" framing that isolates the demographic reveal.
+// Copy is Randy's email text, VERBATIM — do not reword, summarize, or add headings/labels he didn't
+// write. Steps map to the dataset years (index 0→3). Randy gave a heading only for the first step;
+// the rest render with no heading (see ProcessTimeline). For 2025 he gave two options; using the
+// first (shared-platforms / Common App). His alternate: 'Students apply to more schools than ever,
+// offices adopt new software to manage the crush, and applicants increasingly use AI to draft their
+// materials.'
 export const PROCESS_STEPS: { head: string; body: string }[] = [
   {
     head: 'Mostly paper, mostly local',
     body: 'Applications and transcripts arrive by mail. Each one is read by hand, and most students apply to only a handful of schools close to home.',
   },
   {
-    head: 'The application moves online',
-    body: 'The Common Application goes widely digital. Submitting to many schools at once gets far easier, and the number of applications each student files starts to climb.',
+    head: '',
+    body: 'Online applications became much more common, but not yet universal. NACAC reported that for the Fall 2005 cycle, four-year colleges received about 49% of applications online.',
   },
   {
-    head: 'Holistic review spreads',
-    body: 'Admissions offices lean harder on "holistic" review — essays, activities, and personal context weigh more heavily alongside grades, and some schools rethink whether to require test scores.',
+    head: '',
+    body: 'By the Fall 2014 cycle, four-year colleges received about 94% of applications online, up from 49% in Fall 2005.',
   },
   {
-    head: 'High-volume, tech-assisted admissions',
-    body: 'Students apply to more schools than ever, offices adopt new software to manage the crush, and applicants increasingly use AI to draft their materials.',
+    head: '',
+    body: 'The process is now organized around shared application platforms, especially the Common App, which lets students complete one core application and send it to many participating colleges.',
   },
 ];
 
@@ -246,12 +250,12 @@ export const STIMULUS = {
 } as const;
 
 // ── The long-form "news article" wrapper (07-03: the reveal Randy cares about most) ──
-// Copy is VERBATIM from Ben's stimulus draft — "MADLIBs Method 2" in
-// `documents/Stimuli Article Drafts (Ben).pdf` (p.5) — expanded per condition, authored by the
-// placeholder "Alex Williams" from Ben's unisex/common-surname pool. No fabricated outlet (Ben's
-// draft has none). `dek` is the opening standfirst; `lead` renders above the embedded interactive,
-// `widgetIntro` right before it (Ben's "…let's take a look at the numbers" lead-in), `body` after.
-// Only change from Ben's text: the end year is 2025 (he wrote 2026) to match the widget/datasets.
+// Copy is Randy's email article, VERBATIM (DEV_NOTES §F), authored by the placeholder "Alex Williams";
+// no fabricated outlet. Do NOT reword, summarize, or change his years — he demos the full app and the
+// text must read exactly as he wrote it. His `{demographics / admissions processes}` template maps
+// onto the article shell: `dek` = ¶1 · `lead` = ¶2–3 (above the widget) · `widgetIntro` = the
+// "universities keep detailed…records" line (right before the widget) · `body` = the closing
+// "which brings us to the question…" ¶ (after the widget).
 export interface Article {
   outlet: string;
   kicker: string;
@@ -264,41 +268,38 @@ export interface Article {
 }
 
 export const ARTICLE: Record<Condition, Article> = {
-  // Verbatim from Ben's "MADLIBs Method 2" (Stimuli Article Drafts.pdf, p.5), expanded for the
-  // demographics condition. Only the end year is 2025 (Ben wrote 2026) to match the widget/datasets.
+  // Randy's email article, demographics condition — verbatim (DEV_NOTES §F).
   shift: {
     outlet: '',
     kicker: '',
     headline: 'The Shifting of College Demographics Across the United States',
     byline: 'By Alex Williams',
-    dek: 'College demographics are a far-cry from what they looked like only a generation ago. Today’s university classrooms are completely different from those back in 1999.',
+    dek: 'College demographics at major universities across the United States look very different today than they did a generation ago. Today’s university classrooms differ substantially from those in 1999.',
     lead: [
-      'Take a look at college demographics at major United States universities today and they will look very different from what they looked like at the turn of the century. While these changes didn’t occur overnight, with one policy decision or a single headline, now it has become undeniable. One application cycle after the next, university demographics changed little by little until the college classrooms of 2025 no longer resembled those of 1999.',
+      'These changes did not occur overnight. Rather, university demographics changed little by little until the college classrooms of 2026 no longer closely resembled those of 1999.',
+      'Although many people may not have noticed these shifts from one year to the next, taking a step back paints a clearer picture of the changes.',
     ],
     widgetIntro:
-      'While most may have not noticed any shift year-to-year, taking a step back paints a better picture of the changes. Luckily, universities take meticulous—and public—records of the demographic make-up of their classes. Rather than to speculate about these changes, let’s take a look at the numbers.',
+      'Universities keep detailed and publicly available records of their demographic makeup, making it easy to compare college demographics in 1999 with those in 2026.',
     body: [
-      'What stands out is not any specific number but the trajectory of those numbers. Year after year, shares that once dominated the student body slowly recede, as shares that were—at one point—rounding errors become significant portions of the student body.',
-      'Analysts who study college demographics attribute this change to a number of reasons. Shifts in technology, applicant pools, and shifting family priorities, to name a few. The precise reason for these changes are contested, but the changes themselves are not.',
-      'Which brings us to the question that this study is about. As the demographics of universities changes, so too can the conversations about what universities should look for in their applicants. On the next screen we will ask you a few questions about exactly that.',
+      'Which brings us to the question that this study is about. As the demographics of universities change, so too can the conversations about what universities should look for in their applicants. On the next screen, we will ask you a few questions about exactly that.',
     ],
   },
-  // Verbatim from Ben's "MADLIBs Method 2", expanded for the admissions-process (control) condition.
+  // Randy's email article, admissions-process (control) condition — verbatim (DEV_NOTES §F).
   process: {
     outlet: '',
     kicker: '',
-    headline: 'The Shifting of College Admissions Across the United States',
+    headline: 'The Shifting of College Admissions Processes Across the United States',
     byline: 'By Alex Williams',
-    dek: 'Admissions processes are a far-cry from what they looked like only a generation ago. Today’s college applications are completely different from those back in 1999.',
+    dek: 'College admissions processes at major universities across the United States look very different today than they did a generation ago. Today’s college applications differ substantially from those in 1999.',
     lead: [
-      'Take a look at college applications at major United States universities today and they will look very different from what they looked like at the turn of the century. While these changes didn’t occur overnight, with one policy decision or a single headline, now it has become undeniable. One application cycle after the next, university applications changed little by little until the college admissions standards of 2025 no longer resembled those of 1999.',
+      'These changes did not occur overnight. Rather, university admissions processes changed little by little until the college admissions standards of 2026 no longer closely resembled those of 1999.',
+      'Although many people may not have noticed these shifts from one year to the next, taking a step back paints a clearer picture of the changes.',
     ],
     widgetIntro:
-      'While most may have not noticed any shift year-to-year, taking a step back paints a better picture of the changes. Luckily, universities take meticulous—and public—records of their admissions processes. Rather than to speculate about these changes, let’s take a look at the history.',
+      'Universities keep detailed and publicly available records of their admissions processes, making it easy to compare college processes in 1999 with those in 2026.',
     body: [
-      'What stands out is not any specific change but the trajectory of those changes. Year after year, change after change accumulated to accommodate greater numbers of students applying to colleges, until admissions processes stopped resembling those at the turn of the century.',
-      'Analysts who study college admissions attribute this change to a number of reasons. Shifts in technology, applicant pools, and shifting family priorities, to name a few. The precise reason for these changes are contested, but the changes themselves are not.',
-      'Which brings us to the question that this study is about. As the process of applying changes, so too can the conversations about what universities should look for in their applicants. On the next screen we will ask you a few questions about exactly that.',
+      'Which brings us to the question that this study is about. As the process of applying to universities changes, so too can the conversations about what universities should look for in their applicants. On the next screen, we will ask you a few questions about exactly that.',
     ],
   },
 };
