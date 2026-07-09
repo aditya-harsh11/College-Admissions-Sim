@@ -1193,6 +1193,23 @@ input[type='range']::-moz-range-thumb {
   max-width: 60ch;
 }
 
+/* Prominent "100 points" callout on the rubric page (07-09: people dove at the sliders
+   without reading the plain instruction). */
+.study__rubrichead {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--accent);
+  background: #fffdf8;
+  border-radius: 0 10px 10px 0;
+}
+.study__rubrichead .study__h2 {
+  margin: 0 0 6px;
+  font-size: clamp(1.35rem, 3vw, 1.75rem);
+}
+.study__rubrichead .study__stagehint {
+  margin-bottom: 0;
+}
+
 .study__splitgrid {
   display: grid;
   grid-template-columns: minmax(300px, 0.9fr) 1.1fr;

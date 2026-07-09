@@ -483,10 +483,16 @@ export function ShiftStudy({ config }: { config: SimConfig }) {
 
         {step === 'rubric' && (
           <section className="study__card study__card--rubric">
-            <p className="study__stagehint">
-              Spend your <strong>100 points</strong> across the factors below. Give more points to
-              what you think universities should value most when deciding who to admit.
-            </p>
+            <div className="study__rubrichead">
+              <h2 className="study__h2">
+                Spend your <em>100 points</em>
+              </h2>
+              <p className="study__stagehint">
+                Divide 100 points across the factors below — give more to what you think universities
+                should value most when deciding who to admit. Your points must total exactly 100 to
+                continue.
+              </p>
+            </div>
             <AllocationPanel
               criteria={config.criteria}
               weights={rubric.weights}
