@@ -52,7 +52,7 @@ export function getSessionId(): string {
 // Responses" / "v6 Events" tabs, v4 in "v4 Responses" / "v4 Events". Left blank → responses are kept
 // in localStorage only, so nothing is lost.
 const SHEET_ENDPOINT =
-  'https://script.google.com/macros/s/AKfycbzUQ8Ikw4XCOXcxEvvZnzsuVNIvhXWAD2gbqTAxErd8K-JEpCWRK_zxBgsYDZmyF4AnOQ/exec';
+  'https://script.google.com/macros/s/AKfycby0gduaArnlUSS-XtCFxEaNuKP6khNBAxtrCs2KADomul7V62qULVfZHxXkerPPK9GRSg/exec';
 
 // How many buffered events we've already shipped. Each save sends only the NEW events, so calling
 // saveResponse once per page (v6 saves on every step) doesn't re-send the whole log and duplicate
