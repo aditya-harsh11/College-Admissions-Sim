@@ -200,26 +200,28 @@ export const PROCESS_STEPS: { head: string; body: string }[] = [
   },
 ];
 
-// ── Finalized stimulus copy — VERBATIM from "College Admission Stimuli (6.28.2026).docx" ──
+// ── Finalized stimulus copy — from "College Admission Stimuli (6.28.2026).docx" ──
 // Page 1 (shared) → Page 2 (per-condition preview) → Page 3a/3b (per-condition stimulus).
+// Trimmed per the 07-09 review: the welcome dropped a redundant closing line, and each preview's
+// ¶1 dropped its "…in many ways, including [examples]" list (read AI-ish + already in the article).
+// ¶2 ("These changes may shape…") kept for now — Trish's call on whether to drop it.
 export const STIMULUS = {
   // Page 1 — shown to everyone before condition assignment.
   intro: [
     'We are researchers at the University of Wisconsin. We are interested in learning more about how community members think universities should make admissions decisions.',
     'In particular, we are interested in what factors people think universities should consider when evaluating applicants.',
     'There are no right or wrong answers.',
-    'We are interested in your honest opinions about what factors universities should consider when deciding which applicants to admit.',
   ],
   // Page 2 — per-condition preview ("…has changed… these changes may shape… on the next page…").
   preview: {
     shift: [
-      'The demographics of colleges and universities across the United States have changed in many ways, including who attends college, where students come from, what backgrounds students have, and what life experiences students bring with them.',
+      'The demographics of colleges and universities across the United States have changed in many ways.',
       'These changes may shape how people think about what universities should value when deciding which applicants to admit.',
       'On the next page, we will show you information about these changing demographics.',
       'Then, we will ask you what factors you think universities should consider when making admissions decisions.',
     ],
     process: [
-      'The admissions process at colleges and universities across the United States has changed in many ways, including how students apply to college, how applications are submitted, and how applications are reviewed.',
+      'The admissions process at colleges and universities across the United States has changed in many ways.',
       'These changes may shape how people think about what universities should value when deciding which applicants to admit.',
       'On the next page, we will show you information about these changes in the admissions process.',
       'Then, we will ask you what factors you think universities should consider when making admissions decisions.',
