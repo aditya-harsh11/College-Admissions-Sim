@@ -136,7 +136,7 @@ export function getSessionId(): string {
 // by the `study` field (see google-apps-script.gs): v4 rows land in the "v4 Responses" / "v4 Events"
 // tabs (v4 sends no study code, so it's the default), v6 in its own tabs. Left blank → localStorage only.
 const SHEET_ENDPOINT =
-  'https://script.google.com/macros/s/AKfycbzUQ8Ikw4XCOXcxEvvZnzsuVNIvhXWAD2gbqTAxErd8K-JEpCWRK_zxBgsYDZmyF4AnOQ/exec';
+  'https://script.google.com/macros/s/AKfycby0gduaArnlUSS-XtCFxEaNuKP6khNBAxtrCs2KADomul7V62qULVfZHxXkerPPK9GRSg/exec';
 
 // How many buffered events we've already shipped. Each save sends only the NEW events, so calling
 // saveResponse once per page doesn't re-send the whole log every time. Advanced only as far as the
